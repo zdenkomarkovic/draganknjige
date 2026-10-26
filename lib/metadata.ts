@@ -40,7 +40,8 @@ export function buildMetadata({
   // Canonical uvek apsolutan i sa trailing slash-om (isto kao na originalnom sajtu)
   const path = url ?? "/";
   const canonicalUrl = (path.startsWith("http") ? path : `${SITE_URL}${path}`).replace(/\/?$/, "/");
-  const ogImage = image ?? `${SITE_URL}/og-image.png`; // Dodaj og-image.png u /public
+  // Bez slike se koristi app/opengraph-image.tsx (Next ga dodaje automatski)
+  const ogImage = image;
 
   return {
     title: { absolute: fullTitle },
@@ -55,21 +56,16 @@ export function buildMetadata({
       url: canonicalUrl,
       siteName: SITE_NAME,
       type,
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: fullTitle,
-        },
-      ],
+      ...(ogImage && {
+        images: [{ url: ogImage, width: 1200, height: 630, alt: fullTitle }],
+      }),
       ...(publishedTime && { publishedTime }),
     },
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
-      images: [ogImage],
+      ...(ogImage && { images: [ogImage] }),
     },
     ...(noIndex && {
       robots: {

@@ -26,7 +26,6 @@ export const metadata: Metadata = {
   },
   description:
     'Organska eterična ulja, čajevi i kozmetika od hercegovačkog samoniklog bilja. Naručite online, plaćanje pouzećem, besplatna dostava preko 5.000 RSD.',
-  alternates: { canonical: SITE_URL + '/' },
   icons: { icon: '/logo.webp' },
   openGraph: {
     type: 'website',

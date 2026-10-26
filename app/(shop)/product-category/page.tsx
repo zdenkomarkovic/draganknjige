@@ -1,7 +1,12 @@
 import { getAllCategories } from '@/lib/sanity/queries'
+import { buildMetadata } from '@/lib/metadata'
 import CategoryList from '@/components/shop/CategoryList'
 
-export const metadata = { title: 'Kategorije' }
+export const metadata = buildMetadata({
+  title: 'Kategorije',
+  description: 'Sve kategorije organskih eteričnih ulja, čajeva i kozmetike Arijamare.',
+  url: '/product-category/',
+})
 
 export default async function KategorijeStrаnica() {
   const categories = await getAllCategories()

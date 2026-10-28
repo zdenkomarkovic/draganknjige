@@ -10,7 +10,7 @@ export interface Category {
   pageSeoDescription?: string
   image?: SanityImage
   parent?: { _id: string; name: string; slug: string }
-  subcategories?: Category[]
+  subcategories?: { _id: string; name: string; slug: string }[]
 }
 
 export interface Product {
@@ -19,7 +19,6 @@ export interface Product {
   slug: string
   description?: PortableTextBlock[]
   summary?: PortableTextBlock[]
-  reviews?: Review[]
   shortDescription?: string
   price?: number
   salePrice?: number
@@ -77,12 +76,4 @@ export interface Post {
   body?: PortableTextBlock[]
   seoTitle?: string
   seoDescription?: string
-}
-
-export interface Review {
-  _key: string
-  author: string
-  rating: number
-  date?: string
-  text?: string
 }

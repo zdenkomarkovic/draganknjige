@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
-  NEXT_PUBLIC_SITE_NAME: z.string().default("My Site"),
+  NEXT_PUBLIC_SITE_NAME: z.string().default("Dvaipometraknjigauraznimbojama"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
   // Dodaj po potrebi:

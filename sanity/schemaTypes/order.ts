@@ -55,7 +55,6 @@ export const orderType = defineType({
       ],
     }),
     defineField({ name: 'subtotal', title: 'Iznos porudžbine (RSD)', type: 'number' }),
-    defineField({ name: 'shipping', title: 'Dostava (RSD)', type: 'number' }),
     defineField({ name: 'total', title: 'Ukupno (RSD)', type: 'number' }),
   ],
   orderings: [

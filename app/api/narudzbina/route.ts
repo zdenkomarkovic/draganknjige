@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sendOrderEmail } from '@/lib/email/sendOrder'
 import { sanityWriteClient } from '@/lib/sanity/writeClient'
-import { getShippingPrice } from '@/lib/shipping'
 import type { CartItem, OrderFormData } from '@/types/shop'
 
 export async function POST(req: Request) {
@@ -16,8 +15,6 @@ export async function POST(req: Request) {
     if (!form || !items || items.length === 0) {
       return NextResponse.json({ error: 'Nedostaju podaci' }, { status: 400 })
     }
-
-    const shipping = getShippingPrice(totalPrice)
 
     // Cuvanje narudzbine ne sme da blokira slanje mejla
     try {
@@ -43,8 +40,7 @@ export async function POST(req: Request) {
           price: i.salePrice ?? i.price ?? 0,
         })),
         subtotal: totalPrice,
-        shipping,
-        total: totalPrice + shipping,
+        total: totalPrice,
       })
     } catch (err) {
       console.error('Greška pri čuvanju narudžbine u Sanity:', err)

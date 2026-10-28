@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/cart/CartContext'
-import { getShippingPrice } from '@/lib/shipping'
 import type { OrderFormData } from '@/types/shop'
 
 const initialForm: OrderFormData = {
@@ -49,7 +48,7 @@ export default function CheckoutForm() {
         sessionStorage.setItem(
           'purchase',
           JSON.stringify({
-            value: totalPrice + getShippingPrice(totalPrice),
+            value: totalPrice,
             transactionId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           })
         )

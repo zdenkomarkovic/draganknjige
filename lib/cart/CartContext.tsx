@@ -2,17 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { CartItem } from '@/types/shop'
-import { getShippingPrice } from '@/lib/shipping'
 
 interface CartContextValue {
   items: CartItem[]
   totalItems: number
   totalPrice: number
-  shippingPrice: number
-  grandTotal: number
-  addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void
+  addItem: (item: Omit<CartItem, 'quantity'>) => void
   removeItem: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
   clearCart: () => void
 }
 
@@ -24,7 +20,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('cart')
-    if (saved) setItems(JSON.parse(saved))
+    if (saved) {
+      // Svaki proizvod je jedinstven (1 komad), pa se stare količine svode na 1
+      setItems((JSON.parse(saved) as CartItem[]).map((i) => ({ ...i, quantity: 1 })))
+    }
     setMounted(true)
   }, [])
 
@@ -32,25 +31,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (mounted) localStorage.setItem('cart', JSON.stringify(items))
   }, [items, mounted])
 
-  const addItem = useCallback((newItem: Omit<CartItem, 'quantity'>, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i._id === newItem._id)
-      if (existing) {
-        return prev.map((i) =>
-          i._id === newItem._id ? { ...i, quantity: i.quantity + quantity } : i
-        )
-      }
-      return [...prev, { ...newItem, quantity }]
-    })
+  const addItem = useCallback((newItem: Omit<CartItem, 'quantity'>) => {
+    // Proizvod se može dodati samo jednom
+    setItems((prev) => (prev.some((i) => i._id === newItem._id) ? prev : [...prev, { ...newItem, quantity: 1 }]))
   }, [])
 
   const removeItem = useCallback((id: string) => {
     setItems((prev) => prev.filter((i) => i._id !== id))
-  }, [])
-
-  const updateQuantity = useCallback((id: string, quantity: number) => {
-    if (quantity < 1) return
-    setItems((prev) => prev.map((i) => (i._id === id ? { ...i, quantity } : i)))
   }, [])
 
   const clearCart = useCallback(() => {
@@ -62,12 +49,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     (sum, i) => sum + ((i.salePrice ?? i.price) ?? 0) * i.quantity,
     0
   )
-  const shippingPrice = items.length > 0 ? getShippingPrice(totalPrice) : 0
-  const grandTotal = totalPrice + shippingPrice
 
   return (
     <CartContext.Provider
-      value={{ items, totalItems, totalPrice, shippingPrice, grandTotal, addItem, removeItem, updateQuantity, clearCart }}
+      value={{ items, totalItems, totalPrice, addItem, removeItem, clearCart }}
     >
       {children}
     </CartContext.Provider>

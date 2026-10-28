@@ -1,15 +1,15 @@
 import { CHANNELS, PHONE_DISPLAY } from '@/lib/contact'
 
 // Blok "Poručite telefonom" na stranici proizvoda: Viber, WhatsApp, poziv i Instagram DM
-const ORDER_CHANNELS = [CHANNELS.viber, CHANNELS.whatsapp, CHANNELS.call, CHANNELS.instagram]
+const ORDER_CHANNELS = [CHANNELS.viber, CHANNELS.whatsapp, CHANNELS.sms, CHANNELS.call]
 
 export default function OrderByPhone() {
   return (
     <div className="rounded-2xl border border-brand/25 bg-white p-4 md:p-5">
       <p className="font-semibold font-serif text-gray-900">Poručite telefonom</p>
       <p className="text-sm text-gray-500 mt-0.5">
-        Poziv, Viber, WhatsApp, SMS ili Instagram poruka:{' '}
-        <a href="tel:+381652036804" className="font-semibold text-gray-800 hover:text-brand">
+        Poziv, Viber, WhatsApp ili SMS:{' '}
+        <a href={CHANNELS.call.href} className="font-semibold text-gray-800 hover:text-brand">
           {PHONE_DISPLAY}
         </a>
       </p>

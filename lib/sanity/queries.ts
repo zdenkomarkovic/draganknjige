@@ -9,13 +9,15 @@ const categoryFields = `
   seoTitle,
   seoDescription,
   image { asset, alt },
-  "parent": parent->{ _id, name, "slug": slug.current }
+  "parent": null
 `
 
 const categoryFieldsWithSubs = `
   ${categoryFields},
-  "subcategories": *[_type == "category" && parent._ref == ^._id] | order(coalesce(order, 999) asc, name asc) {
-    ${categoryFields}
+  "subcategories": *[_type == "subcategory" && category._ref == ^._id] | order(name asc) {
+    _id,
+    name,
+    "slug": slug.current
   }
 `
 
@@ -29,14 +31,14 @@ const productFields = `
   inStock,
   featured,
   "images": images[] { asset, alt },
-  "category": category->{ name, "slug": slug.current }
+  "category": category->{ name, "slug": slug.current },
+  "subcategory": subcategory->{ name, "slug": slug.current }
 `
 
 const productFieldsFull = `
   ${productFields},
   description,
   summary,
-  reviews[] { _key, author, rating, date, text },
   seoTitle,
   seoDescription,
   _updatedAt
@@ -44,13 +46,24 @@ const productFieldsFull = `
 
 export async function getAllCategories(): Promise<Category[]> {
   return sanityClient.fetch(
-    `*[_type == "category" && !defined(parent)] | order(name asc) { ${categoryFieldsWithSubs} }`
+    `*[_type == "category"] | order(name asc) { ${categoryFieldsWithSubs} }`
   )
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  return sanityClient.fetch(
+  const category = await sanityClient.fetch<Category | null>(
     `*[_type == "category" && slug.current == $slug][0] { ${categoryFieldsWithSubs} }`,
+    { slug }
+  )
+  if (category) return category
+  // Podkategorija se prikazuje na istoj ruti kao kategorija
+  return sanityClient.fetch(
+    `*[_type == "subcategory" && slug.current == $slug][0] {
+      _id,
+      name,
+      "slug": slug.current,
+      "parent": category->{ _id, name, "slug": slug.current }
+    }`,
     { slug }
   )
 }
@@ -68,13 +81,20 @@ export async function searchProducts(q: string): Promise<Product[]> {
   )
 }
 
-export const PAGE_SIZE = 12
+export const PAGE_SIZE = 24
+
+const SORT_ORDERS: Record<string, string> = {
+  jeftinije: 'coalesce(salePrice, price) asc, _createdAt desc',
+  skuplje: 'coalesce(salePrice, price) desc, _createdAt desc',
+}
 
 export async function getFilteredProducts(
   q?: string,
   categorySlug?: string,
-  page = 1
+  page = 1,
+  sort?: string
 ): Promise<{ products: Product[]; total: number }> {
+  const order = (sort && SORT_ORDERS[sort]) || '_createdAt desc'
   const conditions: string[] = ['_type == "product"']
   const params: Record<string, string> = {}
   const offset = (page - 1) * PAGE_SIZE
@@ -85,7 +105,7 @@ export async function getFilteredProducts(
   }
   if (categorySlug) {
     conditions.push(
-      '(category->slug.current == $categorySlug || category->parent->slug.current == $categorySlug)'
+      '(category->slug.current == $categorySlug || subcategory->slug.current == $categorySlug)'
     )
     params.categorySlug = categorySlug
   }
@@ -94,7 +114,7 @@ export async function getFilteredProducts(
 
   const [products, total] = await Promise.all([
     sanityClient.fetch<Product[]>(
-      `${filter} | order(_createdAt desc) [${offset}...${offset + PAGE_SIZE}] { ${productFields} }`,
+      `${filter} | order(${order}) [${offset}...${offset + PAGE_SIZE}] { ${productFields} }`,
       params
     ),
     sanityClient.fetch<number>(`count(${filter})`, params),
@@ -118,9 +138,10 @@ export async function getFeaturedProducts(page = 1, pageSize = 8): Promise<{ pro
 export async function getProductsByCategory(
   categorySlug: string,
   page = 1,
-  q?: string
+  q?: string,
+  sort?: string
 ): Promise<{ products: Product[]; total: number }> {
-  return getFilteredProducts(q, categorySlug, page)
+  return getFilteredProducts(q, categorySlug, page, sort)
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -134,7 +155,7 @@ export async function getRelatedProducts(categorySlug: string, excludeSlug: stri
   return sanityClient.fetch(
     `*[_type == "product" && (
       category->slug.current == $categorySlug ||
-      category->parent->slug.current == $categorySlug
+      subcategory->slug.current == $categorySlug
     ) && slug.current != $excludeSlug] | order(_createdAt desc) [0..3] { ${productFields} }`,
     { categorySlug, excludeSlug }
   )
@@ -187,7 +208,7 @@ export async function getBlogCategories(): Promise<{ name: string; slug: string 
 
 export async function getLandingCategory(slug: string): Promise<Category | null> {
   return sanityClient.fetch(
-    `*[_type == "category" && slug.current == $slug && !defined(parent)][0] { ${categoryFields}, body, pageSeoTitle, pageSeoDescription }`,
+    `*[_type == "category" && slug.current == $slug][0] { ${categoryFields}, body, pageSeoTitle, pageSeoDescription }`,
     { slug }
   )
 }
@@ -200,7 +221,7 @@ export async function getSitemapData(): Promise<{
 }> {
   return sanityClient.fetch(`{
     "products": *[_type == "product" && defined(slug.current)] { "slug": slug.current, "updated": _updatedAt },
-    "categories": *[_type == "category" && defined(slug.current)] { "slug": slug.current, "updated": _updatedAt, "isMain": !defined(parent) },
+    "categories": *[_type in ["category", "subcategory"] && defined(slug.current)] { "slug": slug.current, "updated": _updatedAt, "isMain": _type == "category" },
     "posts": *[_type == "post" && defined(slug.current)] { "slug": slug.current, "updated": coalesce(modifiedAt, _updatedAt) }
   }`)
 }

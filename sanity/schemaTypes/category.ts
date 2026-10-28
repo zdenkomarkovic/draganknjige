@@ -1,15 +1,14 @@
 import { defineField, defineType } from 'sanity'
-import { seoFields, seoGroups } from './seoFields'
+import { AutoSlugInput } from './AutoSlugInput'
 
 export const categoryType = defineType({
   name: 'category',
   title: 'Kategorija',
   type: 'document',
-  groups: [...seoGroups, { name: 'page', title: 'Stranica kategorije' }],
   fields: [
     defineField({
       name: 'name',
-      title: 'Naziv',
+      title: 'Naslov',
       type: 'string',
       validation: (r) => r.required(),
     }),
@@ -18,62 +17,11 @@ export const categoryType = defineType({
       title: 'Slug',
       type: 'slug',
       options: { source: 'name' },
+      components: { input: AutoSlugInput },
       validation: (r) => r.required(),
     }),
-    defineField({
-      name: 'description',
-      title: 'Opis',
-      type: 'text',
-      rows: 3,
-    }),
-    defineField({
-      name: 'parent',
-      title: 'Nadkategorija',
-      type: 'reference',
-      to: [{ type: 'category' }],
-      options: { disableNew: true },
-    }),
-    defineField({
-      name: 'order',
-      title: 'Redosled u meniju',
-      type: 'number',
-      description: 'Manji broj se prikazuje ranije. Kategorije bez broja idu na kraj, po abecedi.',
-    }),
-    defineField({
-      name: 'image',
-      title: 'Slika',
-      type: 'image',
-      options: { hotspot: true },
-      fields: [
-        defineField({ name: 'alt', title: 'Alt tekst', type: 'string' }),
-      ],
-    }),
-    defineField({
-      name: 'body',
-      title: 'Tekst stranice kategorije',
-      type: 'array',
-      group: 'page',
-      of: [{ type: 'block' }, { type: 'image', options: { hotspot: true } }],
-      description:
-        'Tekst na glavnoj stranici kategorije (/naziv-kategorije/), iznad kartica proizvoda. Naslov koji počinje sa „FAQ" i sve posle njega prikazuje se ispod kartica. Važi samo za glavne kategorije, ne i za podkategorije.',
-    }),
-    defineField({
-      name: 'pageSeoTitle',
-      title: 'SEO naslov stranice kategorije',
-      type: 'string',
-      group: 'page',
-      description: 'Ako je prazno, koristi se SEO naslov iz taba SEO.',
-    }),
-    defineField({
-      name: 'pageSeoDescription',
-      title: 'SEO opis stranice kategorije',
-      type: 'text',
-      rows: 3,
-      group: 'page',
-    }),
-    ...seoFields,
   ],
   preview: {
-    select: { title: 'name', media: 'image' },
+    select: { title: 'name', subtitle: 'slug.current' },
   },
 })

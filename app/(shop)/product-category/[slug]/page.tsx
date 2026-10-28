@@ -8,12 +8,13 @@ import { buildMetadata } from '@/lib/metadata'
 import { urlFor } from '@/lib/sanity/image'
 import ProductGrid from '@/components/shop/ProductGrid'
 import SubcategoryDropdown from '@/components/shop/SubcategoryDropdown'
+import SortSelect from '@/components/shop/SortSelect'
 import SearchInput from '@/components/shop/SearchInput'
 import Pagination from '@/components/shop/Pagination'
 
 interface Props {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ q?: string; page?: string }>
+  searchParams: Promise<{ q?: string; page?: string; sort?: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -30,13 +31,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function KategorijaPage({ params, searchParams }: Props) {
   const { slug } = await params
-  const { q, page } = await searchParams
+  const { q, page, sort } = await searchParams
   const query = q?.trim() ?? ''
   const currentPage = Math.max(1, parseInt(page ?? '1'))
 
   const [category, { products, total }] = await Promise.all([
     getCategoryBySlug(slug),
-    getProductsByCategory(slug, currentPage, query || undefined),
+    getProductsByCategory(slug, currentPage, query || undefined, sort),
   ])
 
   if (!category) notFound()
@@ -92,9 +93,14 @@ export default async function KategorijaPage({ params, searchParams }: Props) {
             <SubcategoryDropdown subcategories={category.subcategories} label={category.name} />
           )}
         </div>
-        <Suspense>
-          <SearchInput placeholder="Pretraži u ovoj kategoriji..." />
-        </Suspense>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Suspense>
+            <SortSelect />
+          </Suspense>
+          <Suspense>
+            <SearchInput placeholder="Pretraži u ovoj kategoriji..." />
+          </Suspense>
+        </div>
       </div>
 
       <ProductGrid

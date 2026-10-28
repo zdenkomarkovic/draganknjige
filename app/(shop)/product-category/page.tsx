@@ -4,7 +4,7 @@ import CategoryList from '@/components/shop/CategoryList'
 
 export const metadata = buildMetadata({
   title: 'Kategorije',
-  description: 'Sve kategorije organskih eteričnih ulja, čajeva i kozmetike Arijamare.',
+  description: 'Sve kategorije knjiga, stripova, ploča i kolekcionarskih predmeta.',
   url: '/product-category/',
 })
 

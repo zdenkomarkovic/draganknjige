@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
       { source: '/evercompare', destination: '/', permanent: true },
       { source: '/cart', destination: '/korpa/', permanent: true },
       { source: '/hvala', destination: '/checkout/uspeh/', permanent: true },
-      { source: '/shop', destination: '/prodavnica/', permanent: true },
+      { source: '/shop', destination: '/', permanent: true },
       { source: '/prirodni-cajevi', destination: '/biljni-cajevi/', permanent: true },
       {
         source: '/product-category/hladno-cedjena-ulja-2',
@@ -33,7 +33,6 @@ const nextConfig: NextConfig = {
       },
       { source: '/sitemap_index.xml', destination: '/sitemap.xml', permanent: true },
       { source: '/:type(post|page|product|product_cat|category)-sitemap.xml', destination: '/sitemap.xml', permanent: true },
-      { source: '/blog/page/:page', destination: '/blog/?page=:page', permanent: true },
     ]
   },
 

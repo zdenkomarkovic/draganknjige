@@ -69,6 +69,31 @@ export const productType = defineType({
       to: [{ type: 'category' }],
     }),
     defineField({
+      name: 'subcategory',
+      title: 'Podkategorija',
+      type: 'reference',
+      to: [{ type: 'subcategory' }],
+      options: {
+        disableNew: true,
+        // Nude se samo podkategorije izabrane kategorije
+        filter: ({ document }) => ({
+          filter: 'category._ref == $category',
+          params: { category: (document.category as { _ref?: string } | undefined)?._ref ?? '' },
+        }),
+      },
+      hidden: ({ document }) => !document?.category,
+      validation: (r) =>
+        r.custom(async (value, context) => {
+          const ref = (value as { _ref?: string } | undefined)?._ref
+          if (!ref) return true
+          const category = (context.document?.category as { _ref?: string } | undefined)?._ref
+          const sub = await context
+            .getClient({ apiVersion: '2024-01-01' })
+            .fetch<{ category?: string } | null>(`*[_id == $id][0]{ "category": category._ref }`, { id: ref })
+          return sub?.category === category ? true : 'Podkategorija ne pripada izabranoj kategoriji.'
+        }),
+    }),
+    defineField({
       name: 'price',
       title: 'Cena (RSD)',
       type: 'number',
@@ -114,30 +139,6 @@ export const productType = defineType({
       rows: 3,
       description: 'Jedna do dve rečenice o najbitnijem za ovo ulje. Prikazuje se na kartici proizvoda.',
       validation: (r) => r.max(160).warning('Preporučeno do 160 karaktera da kartica ostane uredna.'),
-    }),
-    defineField({
-      name: 'reviews',
-      title: 'Recenzije',
-      type: 'array',
-      of: [
-        {
-          type: 'object',
-          name: 'review',
-          fields: [
-            defineField({ name: 'author', title: 'Ime', type: 'string', validation: (r) => r.required() }),
-            defineField({
-              name: 'rating',
-              title: 'Ocena (1-5)',
-              type: 'number',
-              initialValue: 5,
-              validation: (r) => r.required().min(1).max(5).integer(),
-            }),
-            defineField({ name: 'date', title: 'Datum', type: 'datetime' }),
-            defineField({ name: 'text', title: 'Tekst', type: 'text', rows: 4 }),
-          ],
-          preview: { select: { title: 'author', subtitle: 'text' } },
-        },
-      ],
     }),
     defineField({
       name: 'inStock',

@@ -6,7 +6,7 @@ import { urlFor } from '@/lib/sanity/image'
 import type { CartItem as CartItemType } from '@/types/shop'
 
 export default function CartItemRow({ item }: { item: CartItemType }) {
-  const { removeItem, updateQuantity } = useCart()
+  const { removeItem } = useCart()
   const price = item.salePrice ?? item.price
 
   return (
@@ -29,23 +29,8 @@ export default function CartItemRow({ item }: { item: CartItemType }) {
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm truncate">{item.name}</p>
         <p className="text-sm text-gray-500 mt-1">
-          {price != null ? `${price.toLocaleString('sr-RS')} RSD / kom` : 'Cena na upit'}
+          {price != null ? `${price.toLocaleString('sr-RS')} RSD` : 'Cena na upit'}
         </p>
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={() => updateQuantity(item._id, item.quantity - 1)}
-            className="w-7 h-7 border border-gray-300 rounded text-lg leading-none hover:border-brand"
-          >
-            −
-          </button>
-          <span className="text-sm w-6 text-center">{item.quantity}</span>
-          <button
-            onClick={() => updateQuantity(item._id, item.quantity + 1)}
-            className="w-7 h-7 border border-gray-300 rounded text-lg leading-none hover:border-brand"
-          >
-            +
-          </button>
-        </div>
       </div>
 
       <div className="flex flex-col items-end justify-between">

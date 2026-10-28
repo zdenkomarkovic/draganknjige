@@ -7,7 +7,7 @@ interface Props {
   pageSize?: number
 }
 
-export default function Pagination({ total, pageSize = 12 }: Props) {
+export default function Pagination({ total, pageSize = 24 }: Props) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()

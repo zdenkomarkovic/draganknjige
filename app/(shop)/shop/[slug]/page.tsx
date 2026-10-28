@@ -10,8 +10,6 @@ import ProductGallery from '@/components/shop/ProductGallery'
 import AddToCartButton from '@/components/shop/AddToCartButton'
 import ShareButton from '@/components/shop/ShareButton'
 import ProductGrid from '@/components/shop/ProductGrid'
-import ProductTabs from '@/components/shop/ProductTabs'
-import StarRating from '@/components/shop/StarRating'
 import RichText from '@/components/content/RichText'
 import OrderByPhone from '@/components/content/OrderByPhone'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
@@ -51,10 +49,6 @@ export default async function ProductPage({ params }: Props) {
     : []
 
   const displayPrice = product.salePrice ?? product.price
-  const reviews = product.reviews ?? []
-  const avgRating = reviews.length
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : 0
   const hasSummary = (product.summary?.length ?? 0) > 0
   const hasDescription = (product.description?.length ?? 0) > 0
 
@@ -62,7 +56,6 @@ export default async function ProductPage({ params }: Props) {
     <main className="max-w-6xl mx-auto px-4 py-10">
       <Breadcrumbs
         items={[
-          { name: 'Prodavnica', href: '/prodavnica/' },
           ...(product.category
             ? [{ name: product.category.name, href: `/product-category/${product.category.slug}/` }]
             : []),
@@ -76,12 +69,6 @@ export default async function ProductPage({ params }: Props) {
         <div className="flex flex-col gap-5">
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold font-serif leading-tight">{product.name}</h1>
-            {reviews.length > 0 && (
-              <p className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                <StarRating value={avgRating} size="sm" />
-                <span>({reviews.length} {reviews.length === 1 ? 'recenzija korisnika' : 'recenzija korisnika'})</span>
-              </p>
-            )}
           </div>
 
           <div className="flex items-baseline gap-3">
@@ -139,11 +126,12 @@ export default async function ProductPage({ params }: Props) {
         </div>
       </div>
 
-      <ProductTabs
-        hasDescription={hasDescription}
-        reviews={reviews}
-        description={<RichText value={product.description} />}
-      />
+      <section className="mt-14">
+        <h2 className="pb-3 border-b border-gray-200 text-lg font-semibold font-serif">Opis</h2>
+        <div className="pt-8 max-w-3xl">
+          {hasDescription ? <RichText value={product.description} /> : <p className="text-gray-500">Opis proizvoda nije dostupan.</p>}
+        </div>
+      </section>
 
       {related.length > 0 && (
         <section className="mt-16 pt-10 border-t border-gray-100">
@@ -161,22 +149,6 @@ export default async function ProductPage({ params }: Props) {
           image: (product.images ?? []).map((img) => urlFor(img).width(1200).url()),
           ...(product.category ? { category: product.category.name } : {}),
           brand: { '@type': 'Brand', name: SITE_NAME },
-          ...(reviews.length
-            ? {
-                aggregateRating: {
-                  '@type': 'AggregateRating',
-                  ratingValue: Number(avgRating.toFixed(2)),
-                  reviewCount: reviews.length,
-                },
-                review: reviews.slice(0, 10).map((r) => ({
-                  '@type': 'Review',
-                  author: { '@type': 'Person', name: r.author },
-                  reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5 },
-                  ...(r.text ? { reviewBody: r.text } : {}),
-                  ...(r.date ? { datePublished: r.date } : {}),
-                })),
-              }
-            : {}),
           ...(displayPrice != null
             ? {
                 offers: {

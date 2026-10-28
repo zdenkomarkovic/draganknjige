@@ -1,6 +1,5 @@
 import Mailjet from 'node-mailjet'
 import type { CartItem, OrderFormData } from '@/types/shop'
-import { getShippingPrice } from '@/lib/shipping'
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Prodavnica'
 
@@ -9,19 +8,14 @@ function formatPrice(n: number) {
 }
 
 function buildTotalsRows(subtotal: number) {
-  const shipping = getShippingPrice(subtotal)
   return `
       <tr>
         <td colspan="2" style="padding:8px;text-align:right;color:#666">Iznos porudžbine:</td>
         <td style="padding:8px;text-align:right">${formatPrice(subtotal)}</td>
       </tr>
       <tr>
-        <td colspan="2" style="padding:8px;text-align:right;color:#666">Dostava:</td>
-        <td style="padding:8px;text-align:right">${shipping === 0 ? 'Besplatna' : formatPrice(shipping)}</td>
-      </tr>
-      <tr>
         <td colspan="2" style="padding:12px 8px;text-align:right;font-weight:bold">Ukupno:</td>
-        <td style="padding:12px 8px;text-align:right;font-weight:bold;font-size:18px">${formatPrice(subtotal + shipping)}</td>
+        <td style="padding:12px 8px;text-align:right;font-weight:bold;font-size:18px">${formatPrice(subtotal)}</td>
       </tr>`
 }
 

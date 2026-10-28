@@ -25,8 +25,7 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    'Organska eterična ulja, čajevi i kozmetika od hercegovačkog samoniklog bilja. Naručite online, plaćanje pouzećem, besplatna dostava preko 5.000 RSD.',
-  icons: { icon: '/logo.webp' },
+    'Dragan knjige — knjige u raznim bojama. Naručite online, plaćanje pouzećem.',
   openGraph: {
     type: 'website',
     locale: 'sr_RS',
@@ -64,13 +63,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 '@id': `${SITE_URL}/#organization`,
                 name: SITE_NAME,
                 url: SITE_URL,
-                logo: `${SITE_URL}/logo.webp`,
-                telephone: '+381652036804',
-                email: 'info@arijamare.com',
-                sameAs: [
-                  'https://www.facebook.com/arijamare1980/',
-                  'https://www.instagram.com/arijamare',
-                ],
+                logo: `${SITE_URL}/logo.png`,
+                telephone: '+381601428426',
+                email: 'irex012@gmail.com',
               },
               {
                 '@type': 'WebSite',
@@ -79,11 +74,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 name: SITE_NAME,
                 inLanguage: 'sr-RS',
                 publisher: { '@id': `${SITE_URL}/#organization` },
-                potentialAction: {
-                  '@type': 'SearchAction',
-                  target: `${SITE_URL}/prodavnica/?q={search_term_string}`,
-                  'query-input': 'required name=search_term_string',
-                },
               },
             ],
           }}

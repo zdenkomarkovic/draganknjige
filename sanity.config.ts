@@ -10,6 +10,13 @@ export default defineConfig({
   title: 'Prodavnica',
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production',
-  plugins: [structureTool()],
+  plugins: [
+    structureTool({
+      structure: (S) =>
+        S.list()
+          .title('Sadržaj')
+          .items(S.documentTypeListItems().filter((item) => !['post', 'order'].includes(item.getId() ?? ''))),
+    }),
+  ],
   schema: { types: schemaTypes },
 })

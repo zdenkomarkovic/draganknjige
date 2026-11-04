@@ -1,4 +1,4 @@
-import { sanityWriteClient } from '@/lib/sanity/writeClient'
+import { getCustomerRows } from '@/lib/db/queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,11 +30,7 @@ export async function GET(req: Request) {
 
   const onlyMarketing = searchParams.get('marketing') === '1'
 
-  const orders = await sanityWriteClient.fetch<OrderRow[]>(
-    `*[_type == "order" && defined(email)] | order(createdAt desc) {
-      email, ime, prezime, telefon, grad, marketingConsent, createdAt, total
-    }`
-  )
+  const orders: OrderRow[] = (await getCustomerRows()).map((o) => ({ ...o, marketingConsent: !!o.marketingConsent }))
 
   // Jedan red po kupcu (po email-u), sa brojem narudzbina i ukupnom potrosnjom
   const byEmail = new Map<string, OrderRow & { orders: number; spent: number; consent: boolean }>()

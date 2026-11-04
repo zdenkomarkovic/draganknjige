@@ -1,4 +1,4 @@
-import { getAllCategories } from '@/lib/sanity/queries'
+import { getAllCategories } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
 import CategoryList from '@/components/shop/CategoryList'
 

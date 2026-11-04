@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useCart } from '@/lib/cart/CartContext'
-import { urlFor } from '@/lib/sanity/image'
+import { imageUrl } from '@/lib/images'
 import type { CartItem as CartItemType } from '@/types/shop'
 
 export default function CartItemRow({ item }: { item: CartItemType }) {
@@ -12,10 +12,12 @@ export default function CartItemRow({ item }: { item: CartItemType }) {
   return (
     <div className="flex gap-4 py-4 border-b border-gray-100">
       <div className="relative w-20 h-20 flex-shrink-0 bg-gray-50 rounded overflow-hidden">
-        {item.image ? (
+        {item.image?.path ? (
           <Image
-            src={urlFor(item.image).width(80).height(80).fit('crop').url()}
+            src={imageUrl(item.image.thumbPath ?? item.image.path)}
             alt={item.name}
+            unoptimized
+            sizes="80px"
             fill
             className="object-cover"
           />

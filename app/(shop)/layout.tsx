@@ -1,9 +1,9 @@
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import CategorySidebar from '@/components/layout/CategorySidebar'
-import { getAllCategories } from '@/lib/sanity/queries'
+import { getAllCategories } from '@/lib/db/queries'
 
-// Sidebar se osvežava iz Sanity-ja najviše na minut
+// Sidebar se osvežava iz baze najviše na minut
 export const revalidate = 60
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {

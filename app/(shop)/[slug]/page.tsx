@@ -1,25 +1,17 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { getLandingCategory, getProductsByCategory } from '@/lib/sanity/queries'
+import { getLandingCategory, getProductsByCategory } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
 import RichText from '@/components/content/RichText'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
 import ProductGrid from '@/components/shop/ProductGrid'
-import type { PortableTextBlock } from '@/types/shop'
 
 // Na kategorijskim stranicama FAQ ide ispod kartica proizvoda: sadržaj se deli na uvod i FAQ
 // (FAQ počinje prvim naslovom koji počinje sa „FAQ”).
-function splitAtFaq(body: PortableTextBlock[] = []) {
-  const i = body.findIndex(
-    (b) =>
-      b._type === 'block' &&
-      typeof b.style === 'string' &&
-      b.style.startsWith('h') &&
-      Array.isArray(b.children) &&
-      (b.children as { text?: string }[]).map((c) => c.text ?? '').join('').trim().toUpperCase().startsWith('FAQ'),
-  )
-  return i === -1 ? { intro: body, faq: [] } : { intro: body.slice(0, i), faq: body.slice(i) }
+function splitAtFaq(html = '') {
+  const m = /<h[1-6][^>]*>\s*(?:<[^>]+>\s*)*FAQ/i.exec(html)
+  return m ? { intro: html.slice(0, m.index), faq: html.slice(m.index) } : { intro: html, faq: '' }
 }
 
 interface Props {
@@ -37,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-// Svaka glavna kategorija iz Sanity-ja ima svoju stranicu na /naziv-kategorije/ (podkategorije nemaju,
+// Svaka glavna kategorija iz baze ima svoju stranicu na /naziv-kategorije/ (podkategorije nemaju,
 // one se prikazuju unutar nadkategorije). Statične stranice (o-nama, kontakt...) su u kodu.
 export default async function CategoryLandingPage({ params }: Props) {
   const { slug } = await params
@@ -52,8 +44,8 @@ export default async function CategoryLandingPage({ params }: Props) {
       <Breadcrumbs items={[{ name: category.name }]} />
       <h1 className="text-3xl font-semibold mb-8 font-serif">{category.name}</h1>
       <div className="max-w-4xl">
-        {intro.length === 0 && category.description && <p className="text-gray-700">{category.description}</p>}
-        <RichText value={intro} />
+        {!intro.trim() && category.description && <p className="text-gray-700">{category.description}</p>}
+        <RichText html={intro} />
       </div>
       <section className="mt-12">
         <ProductGrid products={products} emptyMessage="Nema proizvoda u ovoj kategoriji." />
@@ -65,9 +57,9 @@ export default async function CategoryLandingPage({ params }: Props) {
           </p>
         )}
       </section>
-      {faq.length > 0 && (
+      {faq && (
         <section className="max-w-4xl mt-14 pt-10 border-t border-gray-100">
-          <RichText value={faq} />
+          <RichText html={faq} />
         </section>
       )}
     </main>

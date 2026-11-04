@@ -3,9 +3,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
-import { getCategoryBySlug, getProductsByCategory, PAGE_SIZE } from '@/lib/sanity/queries'
+import { getCategoryBySlug, getProductsByCategory, PAGE_SIZE } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
-import { urlFor } from '@/lib/sanity/image'
+import { imageUrl } from '@/lib/images'
 import ProductGrid from '@/components/shop/ProductGrid'
 import SubcategoryDropdown from '@/components/shop/SubcategoryDropdown'
 import SortSelect from '@/components/shop/SortSelect'
@@ -63,8 +63,9 @@ export default async function KategorijaPage({ params, searchParams }: Props) {
       {category.image && (
         <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden mb-8 bg-gray-100">
           <Image
-            src={urlFor(category.image).width(1200).height(400).fit('crop').url()}
+            src={imageUrl(category.image.path)}
             alt={category.image.alt ?? category.name}
+            unoptimized
             fill
             className="object-cover"
             sizes="(max-width: 1200px) 100vw, 1200px"

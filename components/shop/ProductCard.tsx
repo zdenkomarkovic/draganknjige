@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart/CartContext'
-import { urlFor } from '@/lib/sanity/image'
+import { imageUrl } from '@/lib/images'
 import type { Product } from '@/types/shop'
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -18,10 +18,11 @@ export default function ProductCard({ product }: { product: Product }) {
       <Link href={`/shop/${product.slug}`} className="block aspect-square relative bg-gray-50">
         {image ? (
           <Image
-            src={urlFor(image).width(400).height(400).fit('crop').url()}
+            src={imageUrl(image.thumbPath ?? image.path)}
             alt={image.alt ?? product.name}
+            unoptimized
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (

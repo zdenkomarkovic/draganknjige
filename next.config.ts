@@ -2,18 +2,11 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Dashboard: upload više slika odjednom
+  experimental: { serverActions: { bodySizeLimit: '60mb' } },
   distDir: process.env.NEXT_DIST_DIR || '.next',
   // Originalni sajt (WordPress) koristi trailing slash u svim URL-ovima; zadržavamo ga radi SEO-a
   trailingSlash: true,
-
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'cdn.sanity.io',
-      },
-    ],
-  },
 
   // 301 redirekti sa starih WordPress URL-ova koji više ne postoje
   async redirects() {
@@ -36,10 +29,15 @@ const nextConfig: NextConfig = {
     ]
   },
 
+  // Indeks sitemap-ova (sitemap.ts ima više delova, pa Next sam ne pravi /sitemap.xml)
+  async rewrites() {
+    return [{ source: '/sitemap.xml', destination: '/sitemap-index.xml' }]
+  },
+
   async headers() {
     return [
       {
-        source: '/((?!studio).*)',
+        source: '/(.*)',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },

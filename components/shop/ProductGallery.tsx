@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { urlFor } from '@/lib/sanity/image'
-import type { SanityImage } from '@/types/shop'
+import { imageUrl } from '@/lib/images'
+import type { ProductImage } from '@/types/shop'
 
 interface Props {
-  images: SanityImage[]
+  images: ProductImage[]
   productName: string
 }
 
@@ -115,10 +115,11 @@ export default function ProductGallery({ images, productName }: Props) {
             aria-label="Prikaži sliku preko celog ekrana"
           />
           <Image
-            src={urlFor(activeImage).width(800).height(800).fit('crop').url()}
+            src={imageUrl(activeImage.path)}
             alt={activeImage.alt ?? productName}
             fill
-            className="object-cover"
+            unoptimized
+            className="object-contain"
             sizes="(max-width: 768px) 100vw, 50vw"
             priority
           />
@@ -157,9 +158,10 @@ export default function ProductGallery({ images, productName }: Props) {
                 aria-label={`Slika ${i + 1}`}
               >
                 <Image
-                  src={urlFor(img).width(128).height(128).fit('crop').url()}
+                  src={imageUrl(img.thumbPath ?? img.path)}
                   alt={img.alt ?? `${productName} ${i + 1}`}
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="64px"
                 />
@@ -199,9 +201,10 @@ export default function ProductGallery({ images, productName }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={urlFor(activeImage).width(1600).url()}
+              src={imageUrl(activeImage.path)}
               alt={activeImage.alt ?? productName}
               fill
+              unoptimized
               className="object-contain"
               sizes="100vw"
             />

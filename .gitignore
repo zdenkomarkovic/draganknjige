@@ -30,3 +30,7 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 .next-test
+
+# Uvoz sa KP-a
+uploads/
+import-data/

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { urlFor } from '@/lib/sanity/image'
+import { imageUrl } from '@/lib/images'
 import type { Category } from '@/types/shop'
 
 export default function CategoryList({
@@ -40,8 +40,9 @@ export default function CategoryList({
         >
           {cat.image && (
             <Image
-              src={urlFor(cat.image).width(500).height(625).fit('crop').url()}
+              src={imageUrl(cat.image.path)}
               alt={cat.image.alt ?? cat.name}
+              unoptimized
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 640px) 50vw, 25vw"

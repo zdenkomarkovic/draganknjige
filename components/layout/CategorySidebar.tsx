@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Category } from '@/types/shop'
 
-// Kategorije i podkategorije iz Sanity-ja. Na malim ekranima se sklapa u dugme "Kategorije".
+// Kategorije i podkategorije iz baze. Na malim ekranima se sklapa u dugme "Kategorije".
 export default function CategorySidebar({ categories }: { categories: Category[] }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)

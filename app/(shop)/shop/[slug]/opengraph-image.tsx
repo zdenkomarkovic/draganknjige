@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
-import { getProductBySlug } from '@/lib/sanity/queries'
-import { urlFor } from '@/lib/sanity/image'
-import { SITE_NAME } from '@/lib/constants'
+import { getProductBySlug } from '@/lib/db/queries'
+import { absoluteImageUrl } from '@/lib/images'
+import { SITE_NAME, SITE_URL } from '@/lib/constants'
 
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
@@ -10,9 +10,7 @@ export default async function OgImage({ params }: { params: Promise<{ slug: stri
   const { slug } = await params
   const product = await getProductBySlug(slug)
 
-  const imageUrl = product?.images?.[0]
-    ? urlFor(product.images[0]).width(630).height(630).fit('crop').url()
-    : null
+  const imageUrl = product?.images?.[0] ? absoluteImageUrl(product.images[0].thumbPath ?? product.images[0].path, SITE_URL) : null
 
   const displayPrice = product ? (product.salePrice ?? product.price) : null
 

@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import ProductGrid from '@/components/shop/ProductGrid'
 import Pagination from '@/components/shop/Pagination'
 import SortSelect from '@/components/shop/SortSelect'
-import { getFilteredProducts, PAGE_SIZE } from '@/lib/sanity/queries'
+import { getFilteredProducts, PAGE_SIZE } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
 import { SITE_NAME } from '@/lib/constants'
 

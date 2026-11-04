@@ -1,16 +1,16 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { getProductBySlug, getRelatedProducts } from '@/lib/sanity/queries'
+import { getProductBySlug, getRelatedProducts } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
 import { SITE_URL, SITE_NAME } from '@/lib/constants'
-import { urlFor } from '@/lib/sanity/image'
+import { absoluteImageUrl } from '@/lib/images'
 import { JsonLd } from '@/components/seo/JsonLd'
 import ProductGallery from '@/components/shop/ProductGallery'
 import AddToCartButton from '@/components/shop/AddToCartButton'
 import ShareButton from '@/components/shop/ShareButton'
 import ProductGrid from '@/components/shop/ProductGrid'
-import RichText from '@/components/content/RichText'
+import { PlainText } from '@/components/content/RichText'
 import OrderByPhone from '@/components/content/OrderByPhone'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
 
@@ -32,9 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: product.seoTitle ?? product.name,
     description: product.seoDescription ?? fallback,
     url: `/shop/${slug}/`,
-    image: product.images?.[0]?.asset
-      ? urlFor(product.images[0]).width(1200).height(630).fit('crop').url()
-      : undefined,
+    image: product.images?.[0] ? absoluteImageUrl(product.images[0].path, SITE_URL) : undefined,
   })
 }
 
@@ -44,13 +42,14 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound()
 
-  const related = product.category
-    ? await getRelatedProducts(product.category.slug, slug)
-    : []
+  const related = await getRelatedProducts(
+    { subcategorySlug: product.subcategory?.slug, categorySlug: product.category?.slug },
+    slug,
+  )
 
   const displayPrice = product.salePrice ?? product.price
-  const hasSummary = (product.summary?.length ?? 0) > 0
-  const hasDescription = (product.description?.length ?? 0) > 0
+  const hasSummary = !!product.summary?.trim()
+  const hasDescription = !!product.description?.trim()
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
@@ -96,7 +95,7 @@ export default async function ProductPage({ params }: Props) {
           {/* Kratak tekst ispod cene */}
           {hasSummary ? (
             <div className="text-sm text-gray-700 [&_h4]:!mt-0 [&_h4]:!mb-2 [&_h4]:text-base [&_p]:!mb-3 [&_p:last-child]:!mb-0">
-              <RichText value={product.summary} />
+              <PlainText text={product.summary} />
             </div>
           ) : (
             product.shortDescription && (
@@ -129,7 +128,13 @@ export default async function ProductPage({ params }: Props) {
       <section className="mt-14">
         <h2 className="pb-3 border-b border-gray-200 text-lg font-semibold font-serif">Opis</h2>
         <div className="pt-8 max-w-3xl">
-          {hasDescription ? <RichText value={product.description} /> : <p className="text-gray-500">Opis proizvoda nije dostupan.</p>}
+          {hasDescription ? (
+            <PlainText text={product.description} />
+          ) : product.shortDescription ? (
+            <PlainText text={product.shortDescription} />
+          ) : (
+            <p className="text-gray-500">Opis proizvoda nije dostupan.</p>
+          )}
         </div>
       </section>
 
@@ -146,7 +151,7 @@ export default async function ProductPage({ params }: Props) {
           name: product.name,
           url: `${SITE_URL}/shop/${slug}/`,
           description: product.seoDescription ?? product.name,
-          image: (product.images ?? []).map((img) => urlFor(img).width(1200).url()),
+          image: (product.images ?? []).map((img) => absoluteImageUrl(img.path, SITE_URL)),
           ...(product.category ? { category: product.category.name } : {}),
           brand: { '@type': 'Brand', name: SITE_NAME },
           ...(displayPrice != null
@@ -159,7 +164,9 @@ export default async function ProductPage({ params }: Props) {
                   availability: product.inStock
                     ? 'https://schema.org/InStock'
                     : 'https://schema.org/OutOfStock',
-                  itemCondition: 'https://schema.org/NewCondition',
+                  itemCondition: /nov/i.test(product.condition ?? '') && !/polovn|korišć/i.test(product.condition ?? '')
+                    ? 'https://schema.org/NewCondition'
+                    : 'https://schema.org/UsedCondition',
                 },
               }
             : {}),

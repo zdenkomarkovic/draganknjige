@@ -1,65 +1,38 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { PortableText, type PortableTextComponents } from 'next-sanity'
-import { urlFor } from '@/lib/sanity/image'
-import type { PortableTextBlock } from '@/types/shop'
+// Prikaz sadržaja iz baze.
+//  - RichText: HTML koji administrator unosi u dashboardu (tekst stranice kategorije, blog)
+//  - PlainText: običan tekst (opis proizvoda); novi red = novi pasus
 
-const components: PortableTextComponents = {
-  block: {
-    h2: ({ children }) => <h2 className="text-2xl font-semibold mt-10 mb-4 font-serif">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-xl font-semibold mt-8 mb-3 font-serif">{children}</h3>,
-    h4: ({ children }) => <h4 className="text-lg font-semibold mt-6 mb-2">{children}</h4>,
-    blockquote: ({ children }) => (
-      <blockquote className="border-l-4 border-brand pl-4 italic text-gray-600 my-6">{children}</blockquote>
-    ),
-    normal: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
-  },
-  list: {
-    bullet: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-1">{children}</ul>,
-    number: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-1">{children}</ol>,
-  },
-  marks: {
-    link: ({ value, children }) => {
-      const href: string = value?.href ?? '#'
-      const external = /^https?:\/\//i.test(href) || href.startsWith('mailto:') || href.startsWith('tel:')
-      if (external) {
-        return (
-          <a href={href} className="text-brand underline underline-offset-2" rel="noopener">
-            {children}
-          </a>
-        )
-      }
-      return (
-        <Link href={href} className="text-brand underline underline-offset-2">
-          {children}
-        </Link>
-      )
-    },
-  },
-  types: {
-    image: ({ value }) => {
-      if (!value?.asset) return null
-      return (
-        <figure className="my-6">
-          <Image
-            src={urlFor(value).width(1200).fit('max').url()}
-            alt={value.alt ?? ''}
-            width={1200}
-            height={800}
-            className="rounded-lg w-full h-auto"
-            sizes="(max-width: 768px) 100vw, 768px"
-          />
-        </figure>
-      )
-    },
-  },
+const html_styles = [
+  '[&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:mt-10 [&_h2]:mb-4 [&_h2]:font-serif',
+  '[&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-8 [&_h3]:mb-3 [&_h3]:font-serif',
+  '[&_h4]:text-lg [&_h4]:font-semibold [&_h4]:mt-6 [&_h4]:mb-2',
+  '[&_p]:mb-4 [&_p]:leading-relaxed',
+  '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ul]:space-y-1',
+  '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_ol]:space-y-1',
+  '[&_blockquote]:border-l-4 [&_blockquote]:border-brand [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote]:my-6',
+  '[&_a]:text-brand [&_a]:underline [&_a]:underline-offset-2',
+  '[&_img]:rounded-lg [&_img]:w-full [&_img]:h-auto [&_img]:my-6',
+].join(' ')
+
+export default function RichText({ html }: { html?: string | null }) {
+  if (!html?.trim()) return null
+  // Sadržaj unosi samo prijavljen administrator; zato se ne čisti dodatno
+  return <div className={`text-gray-800 ${html_styles}`} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-export default function RichText({ value }: { value?: PortableTextBlock[] }) {
-  if (!value || value.length === 0) return null
+export function PlainText({ text }: { text?: string | null }) {
+  const paragraphs = (text ?? '')
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+  if (paragraphs.length === 0) return null
   return (
     <div className="text-gray-800">
-      <PortableText value={value as never} components={components} />
+      {paragraphs.map((p, i) => (
+        <p key={i} className="mb-4 leading-relaxed">
+          {p}
+        </p>
+      ))}
     </div>
   )
 }

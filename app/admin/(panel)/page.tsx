@@ -24,16 +24,27 @@ function Card({ title, value, sub, href }: { title: string; value: string | numb
 
 export default async function OverviewPage() {
   await requireUser()
-  const { products, orders, imports } = await getStats()
+  const { products, orders, inquiries, imports } = await getStats()
   const total = Number(products?.total ?? 0)
   return (
     <div className="max-w-5xl">
       <h1 className="text-2xl font-semibold font-serif mb-6">Pregled</h1>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card title="Proizvodi" value={total} sub={`${Number(products?.visible ?? 0).toLocaleString('sr-RS')} vidljivo`} href="/admin/proizvodi/" />
+        <Card
+          title="Proizvodi"
+          value={total}
+          sub={`${Number(products?.visible ?? 0).toLocaleString('sr-RS')} vidljivo`}
+          href="/admin/proizvodi/"
+        />
         <Card title="Sakriveni" value={products?.hidden ?? 0} href="/admin/proizvodi/?visible=0" />
         <Card title="Bez slike" value={products?.no_image ?? 0} />
-        <Card title="Nove narudžbine" value={orders?.nove ?? 0} sub={`ukupno ${orders?.ukupno ?? 0}`} href="/admin/narudzbine/?status=nova" />
+        <Card title="Novi upiti" value={inquiries?.nove ?? 0} href="/admin/upiti/?status=nova" />
+        <Card
+          title="Nove narudžbine"
+          value={orders?.nove ?? 0}
+          sub={`ukupno ${orders?.ukupno ?? 0}`}
+          href="/admin/narudzbine/?status=nova"
+        />
       </div>
 
       <h2 className="text-lg font-semibold font-serif mt-10 mb-3">Stanje uvoza sa KupujemProdajem</h2>

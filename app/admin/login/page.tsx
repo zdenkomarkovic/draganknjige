@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/admin/auth'
 import { loginAction } from '../actions'
-import { ActionForm, Field, inputCls } from '../_components/ui'
+import { ActionForm, Field, inputCls, PasswordInput } from '../_components/ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +18,7 @@ export default async function LoginPage() {
               <input name="email" type="email" required autoComplete="username" autoFocus className={inputCls} />
             </Field>
             <Field label="Lozinka">
-              <input name="password" type="password" required autoComplete="current-password" className={inputCls} />
+              <PasswordInput name="password" required autoComplete="current-password" className={inputCls} />
             </Field>
           </div>
         </ActionForm>

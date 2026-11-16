@@ -111,16 +111,6 @@ export default function CheckoutForm() {
         />
       </div>
 
-      <label className="flex items-start gap-2 text-sm text-gray-600">
-        <input
-          type="checkbox"
-          checked={form.marketingConsent ?? false}
-          onChange={(e) => setForm((prev) => ({ ...prev, marketingConsent: e.target.checked }))}
-          className="mt-1"
-        />
-        <span>Želim da primam novosti i ponude putem mejla (opciono).</span>
-      </label>
-
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
           {error}

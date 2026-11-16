@@ -22,6 +22,20 @@
       "when": 1793750023213,
       "tag": "0002_condition_visible_category_body",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1794271794792,
+      "tag": "0003_inquiries",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1794274881617,
+      "tag": "0004_seen_at",
+      "breakpoints": true
     }
   ]
 }

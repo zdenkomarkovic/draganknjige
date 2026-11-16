@@ -1,13 +1,22 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { requireUser } from '@/lib/admin/auth'
 import { ADMIN_PAGE_SIZE, listCategoriesAdmin, listProducts } from '@/lib/admin/data'
 import { imageUrl } from '@/lib/images'
 import { toggleVisibleAction } from '../../actions'
-import { btnCls, btnGhostCls, inputCls } from '../../_components/ui'
+import ProductFilters from '../../_components/ProductFilters'
+import { btnCls, btnGhostCls } from '../../_components/ui'
 
 export const metadata = { title: 'Proizvodi' }
 
-type SP = { q?: string; cat?: string; visible?: string; status?: string; page?: string; obrisano?: string }
+type SP = {
+  q?: string
+  cat?: string
+  visible?: string
+  status?: string
+  page?: string
+  obrisano?: string
+}
 
 function qs(sp: SP, over: Record<string, string | undefined>) {
   const p = new URLSearchParams()
@@ -45,36 +54,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           + Novi proizvod
         </Link>
       </div>
-      {sp.obrisano && <p className="mb-4 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">Proizvod je obrisan.</p>}
+      {sp.obrisano && (
+        <p className="mb-4 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">Proizvod je obrisan.</p>
+      )}
 
-      <form className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4" method="get">
-        <input name="q" defaultValue={sp.q} placeholder="Naziv ili ID…" className={`${inputCls} col-span-2`} />
-        <select name="cat" defaultValue={catParam} className={inputCls}>
-          <option value="">Sve kategorije</option>
-          {cats.map((c) => (
-            <optgroup key={c.id} label={c.name}>
-              <option value={`c:${c.id}`}>Cela kategorija: {c.name}</option>
-              {c.subs.map((s) => (
-                <option key={s.id} value={`s:${s.id}`}>
-                  {s.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-        <select name="visible" defaultValue={sp.visible ?? ''} className={inputCls}>
-          <option value="">Vidljivost: sve</option>
-          <option value="1">Vidljivi</option>
-          <option value="0">Sakriveni</option>
-        </select>
-        <select name="status" defaultValue={sp.status ?? ''} className={inputCls}>
-          <option value="">Uvoz: sve</option>
-          <option value="link">Samo lista</option>
-          <option value="details">Čeka slike</option>
-          <option value="done">Kompletno</option>
-        </select>
-        <button className={`${btnCls} col-span-2 md:col-span-1`}>Filtriraj</button>
-      </form>
+      <Suspense>
+        <ProductFilters cats={cats} />
+      </Suspense>
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-x-auto">
         <table className="w-full text-sm">

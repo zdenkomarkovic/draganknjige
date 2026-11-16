@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireUser } from '@/lib/admin/auth'
-import { getOrder, ORDER_STATUSES } from '@/lib/admin/data'
+import { getOrder, markOrderSeen, ORDER_STATUSES } from '@/lib/admin/data'
 import { setOrderStatusAction } from '../../../actions'
 import { btnCls, inputCls } from '../../../_components/ui'
 
@@ -21,6 +21,7 @@ export default async function OrderPage({
   const data = await getOrder(Number(id))
   if (!data) notFound()
   const { order: o, items } = data
+  await markOrderSeen(Number(id))
   const rows: [string, unknown][] = [
     ['Ime i prezime', `${o.ime} ${o.prezime}`],
     ['Email', o.email],

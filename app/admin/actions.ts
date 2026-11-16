@@ -3,9 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { changePassword, login, logout, requireUser } from '@/lib/admin/auth'
+import { changePassword, login, logout, requireAdmin, requireUser } from '@/lib/admin/auth'
+import { addUser, deleteUser, setUserPassword, setUserRole } from '@/lib/admin/users'
 import {
+  deleteInquiry,
   saveProduct,
+  setInquiryStatus,
   setOrderStatus,
   setProductVisible,
   slugify,
@@ -81,7 +84,6 @@ export async function saveProductAction(_prev: FormState, f: FormData): Promise<
 
   const input: ProductInput = {
     name: parsed.data.name,
-    slug: text(f, 'slug'),
     // placement: "c:12" (samo kategorija) ili "s:34" (podkategorija; kategorija se izvodi iz nje)
     categoryId: text(f, 'placement').startsWith('c:') ? id(text(f, 'placement').slice(2)) || null : null,
     subcategoryId: text(f, 'placement').startsWith('s:') ? id(text(f, 'placement').slice(2)) || null : null,
@@ -94,10 +96,31 @@ export async function saveProductAction(_prev: FormState, f: FormData): Promise<
     inStock: flag(f, 'inStock'),
     visible: flag(f, 'visible'),
     featured: flag(f, 'featured'),
-    seoTitle: textOrNull(f, 'seoTitle')?.slice(0, 255) ?? null,
-    seoDescription: textOrNull(f, 'seoDescription'),
+    seoTitle: null,
+    seoDescription: null,
+  }
+  // SEO podaci se uvek automatski generišu iz naziva i opisa proizvoda
+  input.seoTitle = input.name.slice(0, 255)
+  {
+    const body = (input.shortDescription ?? input.description ?? '').replace(/\s+/g, ' ').trim()
+    const price = input.salePrice ?? input.price
+    const base = body || `${input.name}${price != null ? ` — ${price.toLocaleString('sr-RS')} RSD` : ''}`
+    input.seoDescription = base.length > 160 ? `${base.slice(0, 157).trimEnd()}...` : base
   }
   const saved = await saveProduct(productId || null, input)
+  // Slike izabrane pri dodavanju novog proizvoda
+  const files = f.getAll('images').filter((x): x is File => x instanceof File && x.size > 0)
+  const imgErrors: string[] = []
+  for (const file of files.slice(0, 20)) {
+    const e = await addProductImage(saved, file)
+    if (e) imgErrors.push(e)
+  }
+  if (imgErrors.length) {
+    revalidatePath('/', 'layout')
+    return {
+      error: `Proizvod je sačuvan (#${saved}), ali slike nisu dodate: ${imgErrors.join('; ')}`,
+    }
+  }
   revalidatePath('/', 'layout')
   redirect(`/admin/proizvodi/${saved}/?ok=1`)
 }
@@ -202,10 +225,10 @@ export async function saveSubcategoryAction(_prev: FormState, f: FormData): Prom
   }
   const values = [categoryId, name, slug, textOrNull(f, 'seoTitle'), textOrNull(f, 'seoDescription'), flag(f, 'visible') ? 1 : 0]
   if (sid) {
-    await getPool().query(
-      'UPDATE subcategories SET category_id=?, name=?, slug=?, seo_title=?, seo_description=?, visible=? WHERE id=?',
-      [...values, sid],
-    )
+    await getPool().query('UPDATE subcategories SET category_id=?, name=?, slug=?, seo_title=?, seo_description=?, visible=? WHERE id=?', [
+      ...values,
+      sid,
+    ])
     // Proizvodi podkategorije prate njenu kategoriju
     await getPool().query('UPDATE products SET category_id = ? WHERE subcategory_id = ?', [categoryId, sid])
   } else {
@@ -244,4 +267,59 @@ export async function setOrderStatusAction(formData: FormData) {
   if (oid) await setOrderStatus(oid, text(formData, 'status'))
   revalidatePath(`/admin/narudzbine/${oid}`)
   redirect(`/admin/narudzbine/${oid}/?ok=1`)
+}
+
+// ─── Upiti kupaca ────────────────────────────────────────────────────────────
+
+export async function setInquiryStatusAction(formData: FormData) {
+  await requireUser()
+  const iid = id(formData.get('id'))
+  if (iid) await setInquiryStatus(iid, text(formData, 'status'))
+  revalidatePath('/admin/upiti')
+  redirect(`/admin/upiti/${iid}/?ok=1`)
+}
+
+export async function deleteInquiryAction(formData: FormData) {
+  await requireUser()
+  const iid = id(formData.get('id'))
+  if (iid) await deleteInquiry(iid)
+  revalidatePath('/admin/upiti')
+  redirect('/admin/upiti/')
+}
+
+// ─── Korisnici (samo administratori) ─────────────────────────────────────────
+
+const roleOf = (v: string): 'admin' | 'editor' => (v === 'admin' ? 'admin' : 'editor')
+
+function usersDone(r: { ok: boolean; error?: string }): never {
+  revalidatePath('/admin/korisnici')
+  redirect(r.ok ? '/admin/korisnici/?ok=1' : `/admin/korisnici/?greska=${encodeURIComponent(r.error ?? 'Greška')}`)
+}
+
+export async function addUserAction(_prev: FormState, f: FormData): Promise<FormState> {
+  await requireAdmin()
+  const r = await addUser({
+    email: text(f, 'email'),
+    name: text(f, 'name'),
+    role: roleOf(text(f, 'role')),
+    password: String(f.get('password') ?? ''),
+  })
+  if (!r.ok) return { error: r.error }
+  revalidatePath('/admin/korisnici')
+  return { ok: `Korisnik ${text(f, 'email').toLowerCase()} je dodat.` }
+}
+
+export async function setUserRoleAction(f: FormData) {
+  const me = await requireAdmin()
+  usersDone(await setUserRole(id(f.get('id')), roleOf(text(f, 'role')), me.id))
+}
+
+export async function setUserPasswordAction(f: FormData) {
+  const me = await requireAdmin()
+  usersDone(await setUserPassword(id(f.get('id')), String(f.get('password') ?? ''), me.id))
+}
+
+export async function deleteUserAction(f: FormData) {
+  const me = await requireAdmin()
+  usersDone(await deleteUser(id(f.get('id')), me.id))
 }

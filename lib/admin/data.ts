@@ -16,16 +16,17 @@ export const slugify = (t: string) =>
 // ─── Pregled ─────────────────────────────────────────────────────────────────
 
 export async function getStats() {
-  const [p, o, imp] = await Promise.all([
+  const [p, o, inq, imp] = await Promise.all([
     row<{ total: number; visible: number; hidden: number; no_image: number }>(
       `SELECT COUNT(*) AS total, SUM(visible = 1) AS visible, SUM(visible = 0) AS hidden,
          SUM(NOT EXISTS (SELECT 1 FROM product_images i WHERE i.product_id = products.id AND i.path <> '')) AS no_image
        FROM products`,
     ),
-    row<{ nove: number; ukupno: number }>(`SELECT SUM(status = 'nova') AS nove, COUNT(*) AS ukupno FROM orders`),
+    row<{ nove: number; ukupno: number }>(`SELECT SUM(seen_at IS NULL) AS nove, COUNT(*) AS ukupno FROM orders`),
+    row<{ nove: number }>(`SELECT COUNT(*) AS nove FROM inquiries WHERE seen_at IS NULL`),
     rows<{ import_status: string; n: number }>('SELECT import_status, COUNT(*) AS n FROM products GROUP BY import_status'),
   ])
-  return { products: p, orders: o, imports: Object.fromEntries(imp.map((r) => [r.import_status, r.n])) }
+  return { products: p, orders: o, inquiries: inq, imports: Object.fromEntries(imp.map((r) => [r.import_status, r.n])) }
 }
 
 // ─── Proizvodi ───────────────────────────────────────────────────────────────
@@ -134,7 +135,6 @@ export async function getProduct(id: number) {
 
 export interface ProductInput {
   name: string
-  slug: string
   categoryId: number | null
   subcategoryId: number | null
   price: number | null
@@ -160,7 +160,9 @@ async function uniqueProductSlug(base: string, excludeId?: number) {
 }
 
 export async function saveProduct(id: number | null, d: ProductInput): Promise<number> {
-  const slug = await uniqueProductSlug(slugify(d.slug || d.name), id ?? undefined)
+  // Slug se pravi automatski iz naziva samo pri dodavanju; kod izmene ostaje isti da se adrese ne menjaju
+  const existing = id ? await row<{ slug: string }>('SELECT slug FROM products WHERE id = ?', [id]) : null
+  const slug = existing?.slug ?? (await uniqueProductSlug(slugify(d.name), undefined))
   // Podkategorija mora da pripada izabranoj kategoriji
   let categoryId = d.categoryId
   if (d.subcategoryId) {
@@ -300,4 +302,68 @@ export async function getOrder(id: number) {
 export async function setOrderStatus(id: number, status: string) {
   if (!ORDER_STATUSES.some(([v]) => v === status)) return
   await getPool().query('UPDATE orders SET status = ? WHERE id = ?', [status, id])
+}
+
+// ─── Upiti kupaca ────────────────────────────────────────────────────────────
+
+export const INQUIRY_STATUSES = [
+  ['nova', 'Nova'],
+  ['odgovoreno', 'Odgovoreno'],
+] as const
+
+export interface InquiryRecord {
+  id: number
+  status: string
+  product_id: number | null
+  product_name: string
+  product_slug: string | null
+  ime: string
+  telefon: string
+  email: string | null
+  poruka: string
+  created_at: string
+}
+
+export async function listInquiries(status?: string, page = 1) {
+  const where = status && INQUIRY_STATUSES.some(([v]) => v === status) ? 'WHERE status = ?' : ''
+  const params = where ? [status] : []
+  const [list, count] = await Promise.all([
+    rows<InquiryRecord>(`SELECT * FROM inquiries ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [
+      ...params,
+      ADMIN_PAGE_SIZE,
+      (Math.max(1, page) - 1) * ADMIN_PAGE_SIZE,
+    ]),
+    row<{ n: number }>(`SELECT COUNT(*) AS n FROM inquiries ${where}`, params),
+  ])
+  return { list, total: count?.n ?? 0 }
+}
+
+export async function getInquiry(id: number) {
+  return row<InquiryRecord>('SELECT * FROM inquiries WHERE id = ?', [id])
+}
+
+export async function setInquiryStatus(id: number, status: string) {
+  if (!INQUIRY_STATUSES.some(([v]) => v === status)) return
+  await getPool().query('UPDATE inquiries SET status = ? WHERE id = ?', [status, id])
+}
+
+export async function deleteInquiry(id: number) {
+  await getPool().query('DELETE FROM inquiries WHERE id = ?', [id])
+}
+
+/** Brojači za sidebar: narudžbine i poruke koje admin još nije otvorio. */
+export async function getNewCounts() {
+  const [o, q] = await Promise.all([
+    row<{ n: number }>('SELECT COUNT(*) AS n FROM orders WHERE seen_at IS NULL'),
+    row<{ n: number }>('SELECT COUNT(*) AS n FROM inquiries WHERE seen_at IS NULL'),
+  ])
+  return { orders: Number(o?.n ?? 0), inquiries: Number(q?.n ?? 0) }
+}
+
+export async function markOrderSeen(id: number) {
+  await getPool().query('UPDATE orders SET seen_at = NOW() WHERE id = ? AND seen_at IS NULL', [id])
+}
+
+export async function markInquirySeen(id: number) {
+  await getPool().query('UPDATE inquiries SET seen_at = NOW() WHERE id = ? AND seen_at IS NULL', [id])
 }

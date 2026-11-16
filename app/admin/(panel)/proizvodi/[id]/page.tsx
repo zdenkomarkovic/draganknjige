@@ -3,13 +3,8 @@ import { notFound } from 'next/navigation'
 import { requireUser } from '@/lib/admin/auth'
 import { getProduct, listCategoriesAdmin } from '@/lib/admin/data'
 import { imageUrl } from '@/lib/images'
-import {
-  deleteImageAction,
-  deleteProductAction,
-  saveProductAction,
-  setMainImageAction,
-  uploadImagesAction,
-} from '../../../actions'
+import { deleteImageAction, deleteProductAction, saveProductAction, setMainImageAction } from '../../../actions'
+import ImageDropzone from '../../../_components/ImageDropzone'
 import { ActionForm, btnGhostCls, Check, ConfirmButton, Field, inputCls } from '../../../_components/ui'
 
 export const metadata = { title: 'Proizvod' }
@@ -51,12 +46,17 @@ export default async function ProductEditPage({
       {ok && <p className="mb-4 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">Sačuvano.</p>}
       {p && p.import_status !== 'done' && (
         <p className="mb-4 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
-          Ovaj oglas još nije potpuno uvezen sa KupujemProdajem (status: {p.import_status}). Pun opis i slike stižu kasnije, a ručne
-          izmene opisa će tada biti prepisane.
+          Ovaj oglas još nije potpuno uvezen sa KupujemProdajem (status: {p.import_status}). Pun opis i slike stižu kasnije, a ručne izmene
+          opisa će tada biti prepisane.
         </p>
       )}
 
-      <ActionForm action={saveProductAction} className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+      <ActionForm
+        action={saveProductAction}
+        stickySubmit
+        submitLabel={isNew ? 'Dodaj proizvod' : 'Sačuvaj izmene'}
+        className="rounded-xl border border-gray-200 bg-white p-5 space-y-4"
+      >
         {p && <input type="hidden" name="id" value={p.id} />}
         <Field label="Naziv">
           <input name="name" required defaultValue={p?.name} className={inputCls} />
@@ -76,9 +76,6 @@ export default async function ProductEditPage({
                 </optgroup>
               ))}
             </select>
-          </Field>
-          <Field label="Slug (deo adrese)" hint="Prazno = automatski iz naziva.">
-            <input name="slug" defaultValue={p?.slug} className={inputCls} />
           </Field>
         </div>
         <div className="grid sm:grid-cols-3 gap-4">
@@ -110,39 +107,45 @@ export default async function ProductEditPage({
         <Field label="Kratak tekst ispod cene (opciono)">
           <textarea name="summary" rows={3} defaultValue={p?.summary ?? ''} className={inputCls} />
         </Field>
-        <details className="rounded-md border border-gray-200 p-3">
-          <summary className="cursor-pointer text-sm font-medium">SEO</summary>
-          <div className="mt-3 space-y-4">
-            <Field label="SEO naslov">
-              <input name="seoTitle" defaultValue={p?.seo_title ?? ''} className={inputCls} />
-            </Field>
-            <Field label="SEO opis">
-              <textarea name="seoDescription" rows={2} defaultValue={p?.seo_description ?? ''} className={inputCls} />
-            </Field>
+        {isNew && (
+          <div>
+            <span className="block text-sm font-medium text-gray-700 mb-1">Slike</span>
+            <ImageDropzone />
           </div>
-        </details>
+        )}
       </ActionForm>
 
       {p && (
         <>
           <section className="mt-8 rounded-xl border border-gray-200 bg-white p-5">
             <h2 className="text-lg font-semibold font-serif mb-4">Slike ({data!.images.length})</h2>
-            {data!.images.length === 0 && <p className="text-sm text-gray-500 mb-4">Proizvod nema slika.</p>}
+            {data!.images.length === 0 ? (
+              <p className="text-sm text-gray-500 mb-4">Proizvod nema slika.</p>
+            ) : (
+              <p className="text-sm text-gray-500 mb-4">
+                Glavna slika je ona sa zelenom oznakom (prikazuje se na listi i na vrhu stranice proizvoda). Za drugu glavnu sliku klikni
+                „Postavi kao glavnu“ ispod nje.
+              </p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
               {data!.images.map((img, i) => (
-                <div key={img.id} className="rounded-lg border border-gray-200 p-2">
+                <div key={img.id} className={`relative rounded-lg p-2 ${i === 0 ? 'border-2 border-green-600' : 'border border-gray-200'}`}>
+                  {i === 0 && (
+                    <span className="absolute left-2 top-2 z-10 rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">
+                      ★ Glavna slika
+                    </span>
+                  )}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imageUrl(img.path)} alt="" className="h-40 w-full object-contain bg-gray-50 rounded" loading="lazy" />
-                  <p className="text-xs text-center text-gray-500 mt-1">{i === 0 ? 'Glavna slika' : `Slika ${i + 1}`}</p>
-                  <div className="flex gap-1 mt-2 justify-center">
+                  <div className="flex flex-col gap-1 mt-2">
                     {i > 0 && (
                       <form action={setMainImageAction}>
                         <input type="hidden" name="id" value={p.id} />
                         <input type="hidden" name="imageId" value={img.id} />
-                        <button className={btnGhostCls}>Glavna</button>
+                        <button className={`${btnGhostCls} w-full`}>Postavi kao glavnu</button>
                       </form>
                     )}
-                    <form action={deleteImageAction}>
+                    <form action={deleteImageAction} className="[&>button]:w-full">
                       <input type="hidden" name="id" value={p.id} />
                       <input type="hidden" name="imageId" value={img.id} />
                       <ConfirmButton message="Obrisati ovu sliku?">Obriši</ConfirmButton>
@@ -151,12 +154,7 @@ export default async function ProductEditPage({
                 </div>
               ))}
             </div>
-            <ActionForm action={uploadImagesAction} submitLabel="Dodaj slike">
-              <input type="hidden" name="id" value={p.id} />
-              <Field label="Nove slike" hint="JPG, PNG ili WebP do 12 MB. Automatski se smanjuju na 800 px.">
-                <input type="file" name="images" accept="image/*" multiple className="text-sm" />
-              </Field>
-            </ActionForm>
+            <ImageDropzone productId={p.id} />
           </section>
 
           <section className="mt-8 rounded-xl border border-red-200 bg-white p-5">

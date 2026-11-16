@@ -11,6 +11,7 @@ import AddToCartButton from '@/components/shop/AddToCartButton'
 import ShareButton from '@/components/shop/ShareButton'
 import ProductGrid from '@/components/shop/ProductGrid'
 import { PlainText } from '@/components/content/RichText'
+import ProductInquiryForm from '@/components/shop/ProductInquiryForm'
 import OrderByPhone from '@/components/content/OrderByPhone'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
 
@@ -109,6 +110,8 @@ export default async function ProductPage({ params }: Props) {
             </span>
             <ShareButton title={product.name} url={`${SITE_URL}/shop/${slug}/`} />
           </div>
+
+          <ProductInquiryForm productId={product._id} productName={product.name} />
 
           <AddToCartButton product={product} />
 

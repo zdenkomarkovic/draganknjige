@@ -76,15 +76,12 @@ async function getHtml(url) {
   for (let attempt = 0; attempt < 4; attempt++) {
     await pageGate.wait()
     try {
-      const res = await fetch(url, { headers: UA, redirect: 'follow' })
+      const res = await fetch(url, { headers: UA, redirect: 'follow', signal: AbortSignal.timeout(30000) })
       if (res.ok || res.status === 410) {
         const html = await res.text()
         // 410 sa praznom stranicom ("Oglas") = blokada; 410 sa pravim sadržajem se ne dešava
-        if (res.status === 410 || /og:title" content="Oglas/.test(html)) {
-          pageGate.slower()
-          await sleep(30000 * (attempt + 1))
-          continue
-        }
+        if (res.status === 410) return { status: 410, html: '' } // obrisan oglas (ili blokada – razlikuje details())
+        if (/og:title" content="Oglas/.test(html)) return { status: 410, html: '' } // placeholder = obrisan oglas ili blokada
         pageGate.good()
         return { status: 200, html }
       }
@@ -288,12 +285,33 @@ async function details() {
   console.log(`Za obradu: ${rows.length} oglasa`)
   let done = 0
   let skipped = 0
+  const [[ctl]] = await db.query("SELECT source_url FROM products WHERE import_status='done' AND visible=1 AND description <> '' ORDER BY id DESC LIMIT 1")
+  const controlUrl = ctl.source_url
+  let gone10 = 0
+  let goneTotal = 0
   const t0 = Date.now()
 
   await pool(rows, Number(opt.concurrency ?? 2), async (p) => {
     let ad
     for (let attempt = 0; attempt < 3 && !ad; attempt++) {
       const { html, status } = await getHtml(p.source_url)
+      if (status === 410) {
+        // Obrisan oglas ili blokada: razlikujemo kontrolnim oglasom koji uvek postoji
+        if ((await getHtml(p.source_url)).status === 410) {
+          if ((await getHtml(controlUrl)).status === 410) {
+            console.log('  ! blokada (kontrolni oglas 410) – pauza 10 min')
+            pageGate.slower()
+            await sleep(600000)
+            skipped++
+            return
+          }
+          await db.query("UPDATE products SET visible = 0, import_status = 'done' WHERE id = ?", [p.id])
+          goneTotal++
+          return
+        }
+        continue
+      }
+      gone10 = 0
       // 404/410 vraća i KP kad privremeno blokira prevelik broj zahteva, pa se NIKAD ne briše na osnovu toga;
       // oglas ostaje u statusu "link" i probaće se ponovo pri sledećem pokretanju.
       const json = html.match(/<script id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/s)?.[1]
@@ -350,7 +368,7 @@ async function download(url) {
   for (let attempt = 0; attempt < 3; attempt++) {
     await imgGate.wait()
     try {
-      const res = await fetch(url, { headers: UA })
+      const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(30000) })
       if (res.status === 404 || res.status === 410) return null
       if (res.ok) {
         const b = Buffer.from(await res.arrayBuffer())

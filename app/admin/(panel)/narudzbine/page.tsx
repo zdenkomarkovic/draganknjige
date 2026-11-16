@@ -2,9 +2,12 @@ import Link from 'next/link'
 import { requireUser } from '@/lib/admin/auth'
 import { ADMIN_PAGE_SIZE, listOrders, ORDER_STATUSES } from '@/lib/admin/data'
 import { btnGhostCls } from '../../_components/ui'
+import { statusStyle } from '../../_components/statusColors'
 
 export const metadata = { title: 'Narudžbine' }
 
+const activeCls = (k: string) =>
+  `inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-semibold shadow-sm ${statusStyle(k).active}`
 const label = Object.fromEntries(ORDER_STATUSES)
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; page?: string }> }) {
@@ -18,18 +21,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <div className="max-w-5xl">
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <h1 className="text-2xl font-semibold font-serif">Narudžbine ({total})</h1>
-        <div className="flex gap-2 flex-wrap">
-          <a className={btnGhostCls} href="/api/kupci/" title="Traži ADMIN_EXPORT_KEY u adresi (?key=…)">
-            Izvoz kupaca (CSV)
-          </a>
-        </div>
       </div>
       <div className="flex gap-2 mb-4 flex-wrap text-sm">
-        <Link href="/admin/narudzbine/" className={`${btnGhostCls} ${!sp.status ? 'bg-gray-100' : ''}`}>
+        <Link href="/admin/narudzbine/" className={!sp.status ? activeCls('all') : btnGhostCls}>
           Sve
         </Link>
         {ORDER_STATUSES.map(([v, l]) => (
-          <Link key={v} href={`/admin/narudzbine/?status=${v}`} className={`${btnGhostCls} ${sp.status === v ? 'bg-gray-100' : ''}`}>
+          <Link key={v} href={`/admin/narudzbine/?status=${v}`} className={sp.status === v ? activeCls(v) : btnGhostCls}>
+            {sp.status !== v && <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${statusStyle(v).dot}`} />}
             {l}
           </Link>
         ))}
@@ -45,12 +44,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               <th className="px-3 py-2 text-right">Stavki</th>
               <th className="px-3 py-2 text-right">Ukupno</th>
               <th className="px-3 py-2">Status</th>
+              <th className="px-3 py-2"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {list.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-3 py-8 text-center text-gray-500">
                   Nema narudžbina.
                 </td>
               </tr>
@@ -69,7 +69,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <td className="px-3 py-2">{o.grad}</td>
                 <td className="px-3 py-2 text-right">{o.items}</td>
                 <td className="px-3 py-2 text-right whitespace-nowrap">{o.total.toLocaleString('sr-RS')} RSD</td>
-                <td className="px-3 py-2">{label[o.status] ?? o.status}</td>
+                <td className="px-3 py-2">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle(o.status).badge}`}>
+                    {label[o.status] ?? o.status}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <Link href={`/admin/narudzbine/${o.id}/`} className={`${btnGhostCls} whitespace-nowrap`}>
+                    Pogledaj →
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -139,6 +139,7 @@ export const orders = mysqlTable(
     postanskiBroj: varchar('postanski_broj', { length: 20 }).notNull(),
     napomena: text('napomena'),
     marketingConsent: boolean('marketing_consent').notNull().default(false),
+    seenAt: datetime('seen_at'), // null = admin još nije otvorio narudžbinu
     subtotal: int('subtotal', { unsigned: true }).notNull(),
     total: int('total', { unsigned: true }).notNull(),
     createdAt: createdAt(),
@@ -161,6 +162,27 @@ export const orderItems = mysqlTable(
     price: int('price', { unsigned: true }).notNull(),
   },
   (t) => [index('order_items_order_idx').on(t.orderId)],
+)
+
+// ─── Upiti kupaca (pitanja o proizvodu) ──────────────────────────────────────
+
+export const inquiries = mysqlTable(
+  'inquiries',
+  {
+    id: int('id', { unsigned: true }).autoincrement().primaryKey(),
+    status: mysqlEnum('status', ['nova', 'odgovoreno']).notNull().default('nova'),
+    // Proizvod može kasnije da se obriše; naziv i link su zato kopirani u upit
+    productId: int('product_id', { unsigned: true }).references(() => products.id, { onDelete: 'set null' }),
+    productName: varchar('product_name', { length: 255 }).notNull(),
+    productSlug: varchar('product_slug', { length: 300 }),
+    ime: varchar('ime', { length: 100 }).notNull(),
+    telefon: varchar('telefon', { length: 50 }).notNull(),
+    email: varchar('email', { length: 255 }),
+    poruka: text('poruka').notNull(),
+    seenAt: datetime('seen_at'), // null = admin još nije pročitao poruku
+    createdAt: createdAt(),
+  },
+  (t) => [index('inquiries_status_created_idx').on(t.status, t.createdAt), index('inquiries_product_idx').on(t.productId)],
 )
 
 // ─── Blog ────────────────────────────────────────────────────────────────────

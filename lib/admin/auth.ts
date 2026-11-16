@@ -65,12 +65,18 @@ export async function login(email: string, password: string): Promise<LoginResul
     return { ok: false, error: generic }
   }
 
-  await getPool().query('UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = NOW() WHERE id = ?', [user.id])
+  await createSession(user.id)
+  return { ok: true }
+}
+
+/** Pravi sesiju za korisnika i postavlja kolačić. */
+export async function createSession(userId: number) {
+  await getPool().query('UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = NOW() WHERE id = ?', [userId])
 
   const token = crypto.randomBytes(32).toString('hex')
   await getPool().query('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))', [
     tokenId(token),
-    user.id,
+    userId,
     SESSION_DAYS,
   ])
   // Povremeno čistimo istekle sesije
@@ -84,7 +90,6 @@ export async function login(email: string, password: string): Promise<LoginResul
     path: '/',
     maxAge: SESSION_DAYS * 24 * 3600,
   })
-  return { ok: true }
 }
 
 export async function logout() {
@@ -111,6 +116,13 @@ export async function requireUser(): Promise<AdminUser> {
   return user
 }
 
+/** Samo administratori (ne i urednici) smeju da upravljaju korisnicima. */
+export async function requireAdmin(): Promise<AdminUser> {
+  const user = await requireUser()
+  if (user.role !== 'admin') redirect('/admin/')
+  return user
+}
+
 export async function changePassword(userId: number, current: string, next: string): Promise<LoginResult> {
   if (next.length < 10) return { ok: false, error: 'Nova lozinka mora imati najmanje 10 znakova.' }
   const u = await row<{ password_hash: string }>('SELECT password_hash FROM users WHERE id = ?', [userId])
@@ -123,7 +135,7 @@ export async function changePassword(userId: number, current: string, next: stri
 }
 
 export async function listUsers() {
-  return rows<{ id: number; email: string; name: string; role: string; last_login_at: string | null }>(
-    'SELECT id, email, name, role, last_login_at FROM users ORDER BY id',
+  return rows<{ id: number; email: string; name: string; role: string; last_login_at: string | null; has_password: number }>(
+    "SELECT id, email, name, role, last_login_at, password_hash LIKE 'scrypt$%' AS has_password FROM users ORDER BY id",
   )
 }

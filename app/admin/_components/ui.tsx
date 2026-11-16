@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import type { FormState } from '../actions'
 
 export const inputCls =
@@ -48,12 +48,14 @@ export function ActionForm({
   submitLabel = 'Sačuvaj',
   className = '',
   encType,
+  stickySubmit = false,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>
   children: React.ReactNode
   submitLabel?: string
   className?: string
   encType?: string
+  stickySubmit?: boolean
 }) {
   const [state, formAction, pending] = useActionState(action, {} as FormState)
   return (
@@ -64,13 +66,18 @@ export function ActionForm({
           {state.error}
         </p>
       )}
-      {state.ok && (
-        <p className="mt-4 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">{state.ok}</p>
-      )}
-      <div className="mt-5">
+      {state.ok && <p className="mt-4 rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">{state.ok}</p>}
+      <div
+        className={
+          stickySubmit
+            ? 'sticky bottom-0 -mx-5 -mb-5 mt-5 flex items-center gap-3 rounded-b-xl border-t border-gray-200 bg-white/95 px-5 py-3 backdrop-blur'
+            : 'mt-5'
+        }
+      >
         <button type="submit" disabled={pending} className={btnCls}>
           {pending ? 'Čuvanje…' : submitLabel}
         </button>
+        {stickySubmit && state.ok && <span className="text-sm text-green-700">{state.ok}</span>}
       </div>
     </form>
   )
@@ -88,5 +95,24 @@ export function ConfirmButton({ children, message, className }: { children: Reac
     >
       {children}
     </button>
+  )
+}
+
+/** Polje za lozinku sa dugmetom za prikaz/sakrivanje lozinke. */
+export function PasswordInput({ className = inputCls, ...props }: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const [shown, setShown] = useState(false)
+  return (
+    <span className="relative block">
+      <input {...props} type={shown ? 'text' : 'password'} className={`${className} pr-16`} />
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-label={shown ? 'Sakrij lozinku' : 'Prikaži lozinku'}
+        aria-pressed={shown}
+        className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-gray-500 hover:text-gray-900"
+      >
+        {shown ? 'Sakrij' : 'Prikaži'}
+      </button>
+    </span>
   )
 }

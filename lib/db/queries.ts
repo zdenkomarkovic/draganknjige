@@ -36,7 +36,7 @@ const FROM = `FROM products p
 // Sakriven proizvod, kategorija ili podkategorija se ne prikazuje na sajtu
 const VISIBLE = `p.visible = 1 AND COALESCE(c.visible, 1) = 1 AND COALESCE(s.visible, 1) = 1`
 
-const nz = <T,>(v: T | null | undefined) => (v === null || v === undefined ? undefined : v)
+const nz = <T>(v: T | null | undefined) => (v === null || v === undefined ? undefined : v)
 
 function toProduct(r: ProductRow, images: ProductImage[]): Product {
   return {
@@ -92,7 +92,10 @@ async function toProducts(list: ProductRow[], firstImageOnly = true): Promise<Pr
   return list.map((r) => toProduct(r, images.get(r.id) ?? []))
 }
 
-/** Pretraga po nazivu: FULLTEXT kad su sve reči dovoljno duge, inače LIKE */
+/**
+ * Pretraga po nazivu "eliminacijom": svaka ukucana reč (ili njen deo) mora da se nalazi u nazivu,
+ * pa se rezultati sužavaju sa svakim novim slovom i svakom novom rečju. Redosled reči nije bitan.
+ */
 function searchClause(q: string): { sql: string; params: unknown[] } {
   const tokens = q
     .split(/\s+/)
@@ -100,10 +103,10 @@ function searchClause(q: string): { sql: string; params: unknown[] } {
     .filter(Boolean)
     .slice(0, 8)
   if (tokens.length === 0) return { sql: '1=1', params: [] }
-  if (tokens.every((t) => t.length >= 3)) {
-    return { sql: 'MATCH(p.name) AGAINST (? IN BOOLEAN MODE)', params: [tokens.map((t) => `+${t}*`).join(' ')] }
+  return {
+    sql: tokens.map(() => 'p.name LIKE ?').join(' AND '),
+    params: tokens.map((t) => `%${t}%`),
   }
-  return { sql: 'p.name LIKE ?', params: [`%${tokens.join(' ').replace(/[%_\\]/g, '\\$&')}%`] }
 }
 
 // ─── Kategorije ──────────────────────────────────────────────────────────────
@@ -147,9 +150,7 @@ export async function getAllCategories(): Promise<Category[]> {
   ])
   return cats.map((c) => ({
     ...toCategory(c),
-    subcategories: subs
-      .filter((s) => s.category_id === c.id)
-      .map((s) => ({ _id: String(s.id), name: s.name, slug: s.slug })),
+    subcategories: subs.filter((s) => s.category_id === c.id).map((s) => ({ _id: String(s.id), name: s.name, slug: s.slug })),
   }))
 }
 
@@ -234,11 +235,7 @@ export async function getFilteredProducts(
   const whereSql = where.join(' AND ')
 
   const [list, count] = await Promise.all([
-    rows<ProductRow>(`SELECT ${LIST_COLUMNS} ${FROM} WHERE ${whereSql} ORDER BY ${order} LIMIT ? OFFSET ?`, [
-      ...params,
-      PAGE_SIZE,
-      offset,
-    ]),
+    rows<ProductRow>(`SELECT ${LIST_COLUMNS} ${FROM} WHERE ${whereSql} ORDER BY ${order} LIMIT ? OFFSET ?`, [...params, PAGE_SIZE, offset]),
     row<{ n: number }>(`SELECT COUNT(*) AS n ${FROM} WHERE ${whereSql}`, params),
   ])
   return { products: await toProducts(list), total: count?.n ?? 0 }
@@ -300,10 +297,10 @@ export async function getSitemapProductCount(): Promise<number> {
 }
 
 export async function getSitemapProducts(chunk: number): Promise<{ slug: string; updated: string }[]> {
-  return rows(
-    `SELECT p.slug, p.updated_at AS updated ${FROM} WHERE ${VISIBLE} ORDER BY p.id LIMIT ? OFFSET ?`,
-    [SITEMAP_CHUNK, chunk * SITEMAP_CHUNK],
-  )
+  return rows(`SELECT p.slug, p.updated_at AS updated ${FROM} WHERE ${VISIBLE} ORDER BY p.id LIMIT ? OFFSET ?`, [
+    SITEMAP_CHUNK,
+    chunk * SITEMAP_CHUNK,
+  ])
 }
 
 export async function getSitemapCategories(): Promise<{ slug: string; updated: string; isMain: boolean }[]> {

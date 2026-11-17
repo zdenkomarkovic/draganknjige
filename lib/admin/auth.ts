@@ -40,8 +40,10 @@ const DUMMY_HASH = hashPassword(crypto.randomBytes(8).toString('hex'))
 const tokenId = (token: string) => crypto.createHash('sha256').update(token).digest('hex')
 
 export type LoginResult = { ok: true } | { ok: false; error: string }
+type AuthResult = { ok: true; userId: number } | { ok: false; error: string; locked?: boolean }
 
-export async function login(email: string, password: string): Promise<LoginResult> {
+/** Proverava email i lozinku (sa zaključavanjem posle previše pokušaja). Ne pravi sesiju. */
+async function authenticate(email: string, password: string): Promise<AuthResult> {
   const generic = 'Pogrešan email ili lozinka.'
   email = email.trim().toLowerCase()
   if (!email || !password) return { ok: false, error: generic }
@@ -51,7 +53,7 @@ export async function login(email: string, password: string): Promise<LoginResul
     [email],
   )
 
-  if (user?.locked) return { ok: false, error: `Previše pokušaja. Pokušaj ponovo za ${LOCK_MINUTES} minuta.` }
+  if (user?.locked) return { ok: false, error: `Previše pokušaja. Pokušaj ponovo za ${LOCK_MINUTES} minuta.`, locked: true }
 
   const valid = verifyPassword(password, user?.password_hash ?? DUMMY_HASH) && !!user
   if (!user || !valid) {
@@ -65,12 +67,42 @@ export async function login(email: string, password: string): Promise<LoginResul
     return { ok: false, error: generic }
   }
 
-  await createSession(user.id)
+  return { ok: true, userId: user.id }
+}
+
+export async function login(email: string, password: string): Promise<LoginResult> {
+  const r = await authenticate(email, password)
+  if (!r.ok) return { ok: false, error: r.error }
+  await createSession(r.userId)
   return { ok: true }
 }
 
-/** Pravi sesiju za korisnika i postavlja kolačić. */
-export async function createSession(userId: number) {
+/** Prijava za route handler: vraća token sesije, a kolačić postavlja pozivalac na HTTP odgovoru. */
+export async function loginWithToken(
+  email: string,
+  password: string,
+): Promise<{ ok: true; token: string } | { ok: false; error: string; locked?: boolean }> {
+  const r = await authenticate(email, password)
+  if (!r.ok) return r
+  return { ok: true, token: await createSessionToken(r.userId) }
+}
+
+/** Opcije kolačića sesije (isti kolačić se postavlja i briše sa istim opcijama). */
+export const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === 'production',
+  path: '/',
+  maxAge: SESSION_DAYS * 24 * 3600,
+}
+
+/** Briše sesiju iz baze na osnovu tokena iz kolačića. */
+export async function destroySession(token: string | undefined) {
+  if (token && /^[0-9a-f]{64}$/.test(token)) await getPool().query('DELETE FROM sessions WHERE id = ?', [tokenId(token)])
+}
+
+/** Upisuje novu sesiju u bazu i vraća token (bez postavljanja kolačića). */
+export async function createSessionToken(userId: number): Promise<string> {
   await getPool().query('UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = NOW() WHERE id = ?', [userId])
 
   const token = crypto.randomBytes(32).toString('hex')
@@ -81,15 +113,14 @@ export async function createSession(userId: number) {
   ])
   // Povremeno čistimo istekle sesije
   if (Math.random() < 0.1) await getPool().query('DELETE FROM sessions WHERE expires_at < NOW()')
+  return token
+}
 
+/** Pravi sesiju za korisnika i postavlja kolačić (za server akcije). */
+export async function createSession(userId: number) {
+  const token = await createSessionToken(userId)
   const jar = await cookies()
-  jar.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: SESSION_DAYS * 24 * 3600,
-  })
+  jar.set(SESSION_COOKIE, token, sessionCookieOptions)
 }
 
 export async function logout() {

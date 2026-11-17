@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { changePassword, login, logout, requireAdmin, requireUser } from '@/lib/admin/auth'
+import { changePassword, requireAdmin, requireUser } from '@/lib/admin/auth'
 import { addUser, deleteUser, setUserPassword, setUserRole } from '@/lib/admin/users'
 import {
   deleteInquiry,
@@ -15,7 +15,7 @@ import {
   slugTaken,
   type ProductInput,
 } from '@/lib/admin/data'
-import { addProductImage, deleteAllProductImageFiles, deleteProductImage, setMainImage } from '@/lib/admin/images'
+import { addProductImage, deleteAllProductImageFiles, isUploadFile, deleteProductImage, setMainImage } from '@/lib/admin/images'
 import { getPool, row } from '@/lib/db'
 
 export interface FormState {
@@ -44,16 +44,8 @@ const id = (v: FormDataEntryValue | number | null | undefined) => {
 
 // ─── Prijava ─────────────────────────────────────────────────────────────────
 
-export async function loginAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const result = await login(text(formData, 'email'), String(formData.get('password') ?? ''))
-  if (!result.ok) return { error: result.error }
-  redirect('/admin/')
-}
-
-export async function logoutAction() {
-  await logout()
-  redirect('/admin/login/')
-}
+// Prijava i odjava su route handler-i (app/api/admin/login i logout): kolačić sesije se
+// ne postavlja iz server akcije jer iza Passenger-a redirekt iz akcije gubi Set-Cookie.
 
 export async function changePasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser()
@@ -109,7 +101,7 @@ export async function saveProductAction(_prev: FormState, f: FormData): Promise<
   }
   const saved = await saveProduct(productId || null, input)
   // Slike izabrane pri dodavanju novog proizvoda
-  const files = f.getAll('images').filter((x): x is File => x instanceof File && x.size > 0)
+  const files = f.getAll('images').filter(isUploadFile)
   const imgErrors: string[] = []
   for (const file of files.slice(0, 20)) {
     const e = await addProductImage(saved, file)
@@ -146,12 +138,18 @@ export async function uploadImagesAction(_prev: FormState, f: FormData): Promise
   const pid = id(f.get('id'))
   const exists = pid && (await row('SELECT id FROM products WHERE id = ?', [pid]))
   if (!exists) return { error: 'Proizvod ne postoji.' }
-  const files = f.getAll('images').filter((x): x is File => x instanceof File && x.size > 0)
+  const files = f.getAll('images').filter(isUploadFile)
   if (files.length === 0) return { error: 'Izaberi bar jednu sliku.' }
   const errors: string[] = []
   for (const file of files.slice(0, 20)) {
-    const e = await addProductImage(pid, file)
-    if (e) errors.push(e)
+    try {
+      const e = await addProductImage(pid, file)
+      if (e) errors.push(e)
+    } catch (err) {
+      console.error('[upload] greška:', err)
+      const m = err instanceof Error ? err.message : String(err)
+      errors.push(`${file.name}: ${m.slice(0, 200)}`)
+    }
   }
   revalidatePath(`/admin/proizvodi/${pid}`)
   return errors.length ? { error: errors.join('; ') } : { ok: `Dodato slika: ${files.length}` }

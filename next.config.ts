@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Samostalni build za Node.js hosting (cPanel): server.js + minimalni node_modules
+  output: 'standalone',
   // Dashboard: upload više slika odjednom
   experimental: { serverActions: { bodySizeLimit: '60mb' } },
   distDir: process.env.NEXT_DIST_DIR || '.next',

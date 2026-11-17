@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { requireUser } from '@/lib/admin/auth'
 import { getNewCounts } from '@/lib/admin/data'
-import { logoutAction } from '../actions'
 import SidebarNav from '../_components/SidebarNav'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +19,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             Pogledaj sajt ↗
           </Link>
         </nav>
-        <form action={logoutAction} className="mt-4">
+        <form method="post" action="/api/admin/logout/" className="mt-4">
           <button className="text-sm text-gray-500 hover:text-black px-3">Odjava</button>
         </form>
       </aside>

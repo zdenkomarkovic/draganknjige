@@ -10,6 +10,10 @@ const MAX_SIDE = 800
 const THUMB_SIDE = 300
 const MAX_BYTES = 12 * 1024 * 1024
 
+/** Provera uploadovanog fajla bez globalnog `File` (ne postoji na Node 18, koji koristi hosting). */
+export const isUploadFile = (x: FormDataEntryValue): x is File =>
+  typeof x !== 'string' && typeof x.arrayBuffer === 'function' && x.size > 0
+
 const abs = (rel: string) => path.join(UPLOADS_DIR, rel)
 const rm = (rel?: string | null) => rel && fs.promises.rm(abs(rel), { force: true }).catch(() => {})
 

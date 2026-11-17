@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { uploadImagesAction } from '../actions'
 
 /**
  * Dodavanje slika bez dodatnog potvrđivanja: klik otvara izbor fajlova, ili se slike prevuku na polje.
@@ -45,11 +44,14 @@ export default function ImageDropzone({ productId }: { productId?: number }) {
     fd.set('id', String(productId))
     imgs.forEach((f) => fd.append('images', f))
     try {
-      const r = await uploadImagesAction({}, fd)
+      const res = await fetch('/api/admin/upload/', { method: 'POST', body: fd })
+      const r: { ok?: string; error?: string } = await res.json().catch(() => ({
+        error: `Server je vratio grešku (HTTP ${res.status}). Slika je možda prevelika za server.`,
+      }))
       setMsg(r.error ? { kind: 'error', text: r.error } : { kind: 'ok', text: r.ok ?? 'Dodato.' })
       router.refresh()
     } catch {
-      setMsg({ kind: 'error', text: 'Slanje slika nije uspelo. Pokušaj ponovo.' })
+      setMsg({ kind: 'error', text: 'Slanje slika nije uspelo (nema veze sa serverom). Pokušaj ponovo.' })
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ''

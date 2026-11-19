@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    'Dragan knjige — knjige u raznim bojama. Naručite online, plaćanje pouzećem.',
+    'Knjige, stripovi i kolekcionarski predmeti. Naručite online, dostava poštom i plaćanje pouzećem.',
   openGraph: {
     type: 'website',
     locale: 'sr_RS',
@@ -35,6 +35,15 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
+  // Google Search Console: postaviti NEXT_PUBLIC_GSC_VERIFICATION ako se koristi meta-tag verifikacija
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } }
+    : {}),
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -66,6 +75,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 logo: `${SITE_URL}/logo.png`,
                 telephone: '+381601428426',
                 email: 'irex012@gmail.com',
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  telephone: '+381601428426',
+                  contactType: 'customer service',
+                  areaServed: 'RS',
+                  availableLanguage: 'sr',
+                },
               },
               {
                 '@type': 'WebSite',
@@ -74,6 +90,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 name: SITE_NAME,
                 inLanguage: 'sr-RS',
                 publisher: { '@id': `${SITE_URL}/#organization` },
+                potentialAction: {
+                  '@type': 'SearchAction',
+                  target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/?q={search_term_string}` },
+                  'query-input': 'required name=search_term_string',
+                },
               },
             ],
           }}

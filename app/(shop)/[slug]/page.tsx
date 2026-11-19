@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getLandingCategory, getProductsByCategory } from '@/lib/db/queries'
+import { categoryDescription, categoryIntro } from '@/lib/seo'
 import { buildMetadata } from '@/lib/metadata'
 import RichText from '@/components/content/RichText'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return {}
   return buildMetadata({
     title: category.pageSeoTitle ?? category.seoTitle ?? category.name,
-    description: category.pageSeoDescription ?? category.seoDescription ?? category.description,
+    description:
+      category.pageSeoDescription ?? category.seoDescription ?? category.description ?? categoryDescription(category.name),
     url: `/${slug}/`,
   })
 }
@@ -44,7 +46,7 @@ export default async function CategoryLandingPage({ params }: Props) {
       <Breadcrumbs items={[{ name: category.name }]} />
       <h1 className="text-3xl font-semibold mb-8 font-serif">{category.name}</h1>
       <div className="max-w-4xl">
-        {!intro.trim() && category.description && <p className="text-gray-700">{category.description}</p>}
+        {!intro.trim() && <p className="text-gray-700">{category.description || categoryIntro(category.name, total)}</p>}
         <RichText html={intro} />
       </div>
       <section className="mt-12">

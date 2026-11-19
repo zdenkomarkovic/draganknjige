@@ -1,10 +1,11 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import Breadcrumbs from '@/components/seo/Breadcrumbs'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { getCategoryBySlug, getProductsByCategory, PAGE_SIZE } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
+import { categoryDescription, categoryIntro } from '@/lib/seo'
 import { imageUrl } from '@/lib/images'
 import ProductGrid from '@/components/shop/ProductGrid'
 import SubcategoryDropdown from '@/components/shop/SubcategoryDropdown'
@@ -17,15 +18,18 @@ interface Props {
   searchParams: Promise<{ q?: string; page?: string; sort?: string }>
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params
+  const { q, page, sort } = await searchParams
   const category = await getCategoryBySlug(slug)
   if (!category) return {}
 
+  const pageNum = Math.max(1, parseInt(page ?? '1') || 1)
   return buildMetadata({
     title: category.seoTitle ?? category.name,
-    description: category.seoDescription ?? category.description,
-    url: `/product-category/${slug}/`,
+    description: category.seoDescription ?? category.description ?? categoryDescription(category.name),
+    url: pageNum > 1 ? `/product-category/${slug}/?page=${pageNum}` : `/product-category/${slug}/`,
+    noIndex: !!(q?.trim() || sort),
   })
 }
 
@@ -44,21 +48,15 @@ export default async function KategorijaPage({ params, searchParams }: Props) {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
-      <nav className="text-sm text-gray-400 mb-8 flex items-center gap-2 flex-wrap">
-        <Link href="/" className="hover:text-black transition-colors">Početna</Link>
-        <span>/</span>
-        <Link href="/product-category" className="hover:text-black transition-colors">Kategorije</Link>
-        {category.parent && (
-          <>
-            <span>/</span>
-            <Link href={`/product-category/${category.parent.slug}`} className="hover:text-black transition-colors">
-              {category.parent.name}
-            </Link>
-          </>
-        )}
-        <span>/</span>
-        <span className="text-gray-600">{category.name}</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { name: 'Kategorije', href: '/product-category/' },
+          ...(category.parent
+            ? [{ name: category.parent.name, href: `/product-category/${category.parent.slug}/` }]
+            : []),
+          { name: category.name },
+        ]}
+      />
 
       {category.image && (
         <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden mb-8 bg-gray-100">
@@ -81,9 +79,9 @@ export default async function KategorijaPage({ params, searchParams }: Props) {
         <h1 className="text-2xl font-semibold mb-4">{category.name}</h1>
       )}
 
-      {category.description && (
-        <p className="text-gray-500 mb-8 max-w-2xl">{category.description}</p>
-      )}
+      <p className="text-gray-500 mb-8 max-w-2xl">
+        {category.description || categoryIntro(category.name, total)}
+      </p>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3 flex-wrap">

@@ -8,12 +8,22 @@ import { getFilteredProducts, PAGE_SIZE } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
 import { SITE_NAME } from '@/lib/constants'
 
-export const metadata: Metadata = buildMetadata({
-  title: 'Dragan knjige',
-  description:
-    'Knjige u raznim bojama. Naručite online, plaćanje pouzećem.',
-  url: '/',
-})
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; sort?: string; q?: string }>
+}): Promise<Metadata> {
+  const { page, sort, q } = await searchParams
+  const pageNum = Math.max(1, parseInt(page ?? '1') || 1)
+  return buildMetadata({
+    title: 'Knjige online',
+    description:
+      'Knjige, stripovi i kolekcionarski predmeti u raznim bojama. Naručite online na irex.rs, dostava poštom i plaćanje pouzećem.',
+    url: pageNum > 1 ? `/?page=${pageNum}` : '/',
+    // Rezultati pretrage i sortiranja nisu za indeks (duplirani sadržaj)
+    noIndex: !!(q?.trim() || sort),
+  })
+}
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ page?: string; sort?: string; q?: string }> }) {
   const { page, sort, q } = await searchParams
@@ -24,17 +34,20 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   return (
     <>
       {!query && (
-      <section className="rounded-2xl bg-brand-soft px-6 py-8 md:py-10 text-center">
-        <h1 className="font-serif font-bold text-gray-900 leading-tight break-words text-2xl sm:text-3xl md:text-4xl">
+      <section className="rounded-2xl bg-brand-soft px-5 py-4 md:py-5 text-center">
+        <h1 className="font-serif font-bold text-gray-900 leading-tight break-words text-xl sm:text-2xl md:text-3xl">
           {SITE_NAME}
         </h1>
-        <p className="mt-2 text-brand-dark font-semibold uppercase tracking-[0.2em] text-xs md:text-sm">
-          Dragan knjige
-        </p>
-        <blockquote className="mt-4 mx-auto max-w-2xl text-gray-700 italic">
+        <p className="mt-1.5 mx-auto max-w-2xl text-gray-700 italic text-sm">
           &bdquo;Nije stvar u tome koliko knjiga košta. Stvar je u tome koliko tebe košta da je ne pročitaš.&ldquo;
-          <footer className="mt-1 text-sm not-italic text-gray-500">&ndash; Džim Ron</footer>
-        </blockquote>
+          <span className="not-italic text-gray-500"> &ndash; Džim Ron</span>
+        </p>
+        <h2 className="mt-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-dark">Kako naručiti</h2>
+        <ol className="mt-1.5 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-gray-700">
+          <li><b>1.</b> Izaberite knjigu</li>
+          <li><b>2.</b> Dodajte u korpu ili pozovite</li>
+          <li><b>3.</b> Šaljemo poštom, plaćate pouzećem</li>
+        </ol>
       </section>
       )}
 

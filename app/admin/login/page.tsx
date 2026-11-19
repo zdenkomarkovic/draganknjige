@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl bg-white border border-gray-200 shadow-sm p-6">
-        <h1 className="text-xl font-semibold font-serif mb-1">Dragan knjige</h1>
+        <h1 className="text-xl font-semibold font-serif mb-1">Administracija</h1>
         <p className="text-sm text-gray-500 mb-5">Prijava u dashboard</p>
         {/* Obična HTML forma: POST na route handler koji postavlja kolačić i preusmerava */}
         <form method="post" action="/api/admin/login/">

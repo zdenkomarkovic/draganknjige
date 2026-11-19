@@ -11,7 +11,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="md:w-56 shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-200 p-4">
-        <p className="font-serif font-semibold text-lg">Dragan knjige</p>
+        <p className="font-serif font-semibold text-lg">Administracija</p>
         <p className="text-xs text-gray-500 mb-4 truncate">{user.name}</p>
         <nav className="flex md:flex-col gap-1 flex-wrap">
           <SidebarNav initial={counts} isAdmin={user.role === 'admin'} />

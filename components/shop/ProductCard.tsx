@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/lib/cart/CartContext'
 import { imageUrl } from '@/lib/images'
+import { productAlt } from '@/lib/seo'
 import type { Product } from '@/types/shop'
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -19,7 +20,7 @@ export default function ProductCard({ product }: { product: Product }) {
         {image ? (
           <Image
             src={imageUrl(image.thumbPath ?? image.path)}
-            alt={image.alt ?? product.name}
+            alt={productAlt(product)}
             unoptimized
             fill
             className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"

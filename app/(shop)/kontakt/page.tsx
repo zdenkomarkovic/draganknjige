@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
 import { buildMetadata } from '@/lib/metadata'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
+import { JsonLd } from '@/components/seo/JsonLd'
 import ContactInfo from '@/components/content/ContactInfo'
 
 export const metadata: Metadata = buildMetadata({
   title: "Kontakt",
+  description:
+    'Kontaktirajte irex.rs telefonom, Viber-om, WhatsApp-om ili emailom. Slanje poštom na vašu adresu i plaćanje pouzećem.',
   url: '/kontakt/',
 })
 
@@ -12,6 +15,21 @@ export default function Page() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
       <Breadcrumbs items={[{ name: "Kontakt" }]} />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: [
+            ['Da li šaljete na adresu?', 'Naravno, knjige šaljemo poštom direktno na vašu adresu.'],
+            ['Da li mogu da platim pouzećem?', 'Možete, plaćanje pouzećem prilikom preuzimanja pošiljke.'],
+            ['Kako mogu da poručim?', 'Putem sajta ili telefonom.'],
+          ].map(([q, a]) => ({
+            '@type': 'Question',
+            name: q,
+            acceptedAnswer: { '@type': 'Answer', text: a },
+          })),
+        }}
+      />
       <h1 className="text-3xl font-semibold mb-8 font-serif">Kontakt</h1>
       <div className="page-content max-w-4xl">
         <h3>Stojimo Vam na raspolaganju za sva Vaša pitanja!</h3>

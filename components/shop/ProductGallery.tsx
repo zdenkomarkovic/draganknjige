@@ -116,7 +116,7 @@ export default function ProductGallery({ images, productName }: Props) {
           />
           <Image
             src={imageUrl(activeImage.path)}
-            alt={activeImage.alt ?? productName}
+            alt={productName}
             fill
             unoptimized
             className="object-contain"
@@ -159,7 +159,7 @@ export default function ProductGallery({ images, productName }: Props) {
               >
                 <Image
                   src={imageUrl(img.thumbPath ?? img.path)}
-                  alt={img.alt ?? `${productName} ${i + 1}`}
+                  alt={`${productName} – slika ${i + 1}`}
                   fill
                   unoptimized
                   className="object-cover"
@@ -202,7 +202,7 @@ export default function ProductGallery({ images, productName }: Props) {
           >
             <Image
               src={imageUrl(activeImage.path)}
-              alt={activeImage.alt ?? productName}
+              alt={productName}
               fill
               unoptimized
               className="object-contain"

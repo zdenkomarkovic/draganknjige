@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { getProductBySlug, getRelatedProducts } from '@/lib/db/queries'
 import { buildMetadata } from '@/lib/metadata'
 import { SITE_URL, SITE_NAME } from '@/lib/constants'
+import { productTitle, productDescription } from '@/lib/seo'
 import { absoluteImageUrl } from '@/lib/images'
 import { JsonLd } from '@/components/seo/JsonLd'
 import ProductGallery from '@/components/shop/ProductGallery'
@@ -24,14 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductBySlug(slug)
   if (!product) return {}
 
-  const price = product.salePrice ?? product.price
-  const fallback = price != null
-    ? `${product.name} — ${price.toLocaleString('sr-RS')} RSD`
-    : product.name
-
   return buildMetadata({
-    title: product.seoTitle ?? product.name,
-    description: product.seoDescription ?? fallback,
+    title: productTitle(product),
+    description: productDescription(product),
     url: `/shop/${slug}/`,
     image: product.images?.[0] ? absoluteImageUrl(product.images[0].path, SITE_URL) : undefined,
   })
@@ -153,7 +149,8 @@ export default async function ProductPage({ params }: Props) {
           '@type': 'Product',
           name: product.name,
           url: `${SITE_URL}/shop/${slug}/`,
-          description: product.seoDescription ?? product.name,
+          description: productDescription(product),
+          sku: String(product._id),
           image: (product.images ?? []).map((img) => absoluteImageUrl(img.path, SITE_URL)),
           ...(product.category ? { category: product.category.name } : {}),
           brand: { '@type': 'Brand', name: SITE_NAME },
@@ -164,6 +161,8 @@ export default async function ProductPage({ params }: Props) {
                   url: `${SITE_URL}/shop/${slug}/`,
                   priceCurrency: 'RSD',
                   price: displayPrice,
+                  priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
+                  seller: { '@id': `${SITE_URL}/#organization` },
                   availability: product.inStock
                     ? 'https://schema.org/InStock'
                     : 'https://schema.org/OutOfStock',
